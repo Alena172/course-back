@@ -42,20 +42,6 @@ async def get_current_user(request: Request, db: Session):
         return None
 
 
-# 📌 /courses
-# @router.get("/courses", response_class=HTMLResponse)
-# def get_courses(request: Request, db: Session = Depends(get_db)):
-#     user = get_current_user(request, db)
-#     courses = course_service.get_all_courses(db)
-#     return templates.TemplateResponse("courses_student.html", {
-#         "request": request,
-#         "user": user,
-#         "courses": courses,
-#         "message": "Курсы не найдены." if not courses else ""
-#     })
-
-
-
 def get_active_courses(db: Session) -> List[Course]:
     try:
         # Получаем только курсы со статусом ACTIVE

@@ -153,4 +153,18 @@ def show_my_account(
         "enrollments": enrollments
     })
 
+@router.get("/logout")
+async def logout_user(response: Response):
+    redirect_response = RedirectResponse(url="/login", status_code=HTTP_302_FOUND)
+    
+    # Очищаем куки с access_token
+    redirect_response.delete_cookie(
+        key="access_token",
+        httponly=True,
+        secure=True,  # Для HTTPS
+        samesite="lax"
+    )
+    
+    return redirect_response
+
 
