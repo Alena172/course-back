@@ -8,7 +8,7 @@ from auth.auth_handler import create_access_token, decode_token, verify_password
 from database import get_db
 from schemas.user import UserCreate
 from services import enrollment_service, user_service
-from models.user import User
+from models.user import RoleEnum, User
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -92,15 +92,25 @@ def login(
     user = user_service.get_user_by_email(db, email)
     if user and verify_password(password, user.password):
         access_token = create_access_token({"sub": user.email}, user.role)
-        response = RedirectResponse(url="/myaccount", status_code=HTTP_302_FOUND)
+        
+        # Определяем URL для перенаправления в зависимости от роли
+        if user.role == RoleEnum.ADMIN:
+            redirect_url = "/admin/dashboard"
+        elif user.role == RoleEnum.TEACHER:
+            redirect_url = "/teacher/courses"
+        else:  # STUDENT или другие роли
+            redirect_url = "/myaccount"
+            
+        response = RedirectResponse(url=redirect_url, status_code=HTTP_302_FOUND)
         response.set_cookie(
             key="access_token",
-            value=f"Bearer {access_token}",  # Добавляем 'Bearer '
+            value=f"Bearer {access_token}",
             httponly=True,
-            secure=True,  # Для HTTPS
+            secure=True,
             samesite='lax'
         )
         return response
+        
     return templates.TemplateResponse("form.html", {
         "request": request,
         "error": "Неверный email или пароль"
