@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ 'Редактирование урока' if lesson.id else 'Создание нового урока' }}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="/static/css/teacher-create-form.css" rel="stylesheet">
+</head>
+<body>
+
+<div class="container">
+  <h1>{{ 'Редактирование урока: ' + lesson.title if lesson.id else 'Создание нового урока для курса: ' + course.title }}</h1>
+
+  <!-- Исправленная форма с прямыми URL вместо url_for -->
+  <form action="/teacher/courses/{{ course.id }}/lessons/{% if lesson.id %}{{ lesson.id }}{% endif %}" method="post" enctype="multipart/form-data">
+    {% if lesson.id %}
+      <input type="hidden" name="lesson_id" value="{{ lesson.id }}">
+    {% endif %}
+
+    <div class="form-section">
+      <label class="title" for="title">Название урока:</label>
+      <input type="text" id="title" name="title" value="{{ lesson.title }}" {% if lesson.id %}readonly{% endif %} class="input-field" required />
+    </div>
+
+    <h2>Добавьте блоки</h2>
+    <div id="blocks">
+      {% for block in lesson.blocks %}
+      <div class="block">
+        <div class="form-section">
+          <label for="blockTitle">Заголовок блока:</label>
+          <input id="blockTitle" type="text" name="blockTitle" value="{{ block.title }}" placeholder="Введите заголовок блока" class="input-field"/>
+        </div>
+
+        <div class="form-section">
+          <label for="blockType">Тип блока:</label>
+          <select id="blockType" name="blockType" class="input-field" required>
+            <option value="TEXT" {% if block.type == 'TEXT' %}selected{% endif %}>Текст</option>
+            <option value="IMAGE" {% if block.type == 'IMAGE' %}selected{% endif %}>Изображение</option>
+            <option value="VIDEO" {% if block.type == 'VIDEO' %}selected{% endif %}>Видео</option>
+          </select>
+        </div>
+
+        <div class="form-section">
+          <label for="blockContent">Содержимое блока:</label>
+          <textarea name="blockContent" placeholder="Введите содержимое блока" class="editable-content" required>{{ block.content }}</textarea>
+        </div>
+
+        <div class="removeBlockForm">
+          <button type="button" class="button button-danger" onclick="removeBlock(this)">Удалить блок</button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div id="addBlockWrapper">
+      <button type="button" id="addBlock">+</button>
+    </div>
+
+    <div class="form-section">
+      <button type="submit" class="button">Сохранить урок</button>
+    </div>
+  </form>
+</div>
+
+<script>
+  // Остальной JavaScript код остается без изменений
+  document.addEventListener('DOMContentLoaded', function () {
+    const textareas = document.querySelectorAll('.editable-content');
+    textareas.forEach(textarea => {
+      autoResize(textarea);
+    });
+  });
+
+  document.getElementById('addBlock').addEventListener('click', function() {
+    var blockDiv = document.createElement('div');
+    blockDiv.classList.add('block');
+
+    blockDiv.innerHTML = `
+      <div class="form-section">
+        <label for="blockTitle">Заголовок блока:</label>
+        <input type="text" name="blockTitle" placeholder="Введите заголовок блока" class="input-field" required />
+      </div>
+      <div class="form-section">
+        <label for="blockType">Тип блока:</label>
+        <select name="blockType" class="input-field" required>
+          <option value="TEXT">Текст</option>
+          <option value="IMAGE">Изображение</option>
+          <option value="VIDEO">Видео</option>
+        </select>
+      </div>
+      <div class="form-section">
+        <label for="blockContent">Содержимое блока:</label>
+        <textarea name="blockContent" placeholder="Введите содержимое блока" class="editable-content" required></textarea>
+      </div>
+      <div class="removeBlockForm">
+        <button type="button" class="button button-danger" onclick="removeBlock(this)">Удалить блок</button>
+      </div>
+    `;
+
+    document.getElementById('blocks').appendChild(blockDiv);
+    autoResize(blockDiv.querySelector('.editable-content'));
+  });
+
+  function removeBlock(button) {
+    var blockDiv = button.closest('.block');
+    blockDiv.remove();
+  }
+
+  document.addEventListener('input', function (event) {
+    if (event.target.classList.contains('editable-content')) {
+      autoResize(event.target);
+    }
+  });
+
+  function autoResize(textarea) {
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
+  }
+</script>
+
+</body>
+</html>

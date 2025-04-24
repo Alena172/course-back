@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Курсы</title>
+    <link href="/static/css/courses_student.css" rel="stylesheet">
+</head>
+<body>
+<!-- Заголовок страницы -->
+<header>
+    <h1>Список курсов</h1>
+</header>
+
+<!-- Ссылка на страницу "Мои курсы" -->
+<nav>
+    <a href="/myaccount" class="my-courses-link">Мои курсы</a>
+</nav>
+
+<!-- Секция с курсами -->
+<section class="courses-list">
+    {% for course in courses %}
+    {% if course.status == "ACTIVE" and course.id %}
+    <div class="course-item">
+        <h2><a class="item-title" href="/course-details/{{ course.id }}">{{ course.title }}</a></h2>
+        <p>Продолжительность: <span>{{ course.duration }}</span> месяцев</p>
+
+        <div class="course-image">
+            <img src="{{ course.image }}" alt="Изображение курса" class="course-img">
+        </div>
+
+        <a href="/course-details/{{ course.id }}" class="btn">Подробнее</a>
+    </div>
+    {% else %}
+    <div class="course-item">
+        <p style="color: red;">⚠️ Проблема с курсом: отсутствует ID</p>
+    </div>
+    {% endif %}
+{% endfor %}
+</section>
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link href="/static/css/teacher-courses-lessons.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <title>Уроки курса</title>
+</head>
+<body>
+<a href="/teacher/courses" class="back-arrow">
+  <i class="fas fa-arrow-left"></i> Назад
+</a>
+<header class="header">
+  <h1>Уроки для курса: {{ course.title }}</h1>
+</header>
+<div class="container">
+  <main class="main-content">
+    <div class="lesson-list">
+      <!-- Цикл по урокам -->
+      {% for lesson in lessons %}
+      <div class="lesson-item">
+        <!-- Вся карточка теперь является ссылкой -->
+        <a href="/teacher/courses/{{ course.id }}/lessons/{{ lesson.id }}/edit" class="lesson-link">
+          <div class="lesson-content">
+            <span class="lesson-title">{{ lesson.title }}</span>
+          </div>
+        </a>
+
+        <!-- Форма для удаления урока, которая не является частью ссылки -->
+        <form action="/teacher/courses/{{ course.id }}/lessons/{{ lesson.id }}/delete" method="post" class="delete-form">
+          <!-- Кнопка удаления урока с условием для деактивации -->
+          <button
+                  type="submit"
+                  {% if course.status == 'ACTIVE' %}disabled{% endif %}
+                  onclick="return confirm('Вы уверены, что хотите удалить этот урок?');"
+                  class="delete-button">
+            Удалить
+          </button>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Ссылка на создание нового урока -->
+    <a href="/teacher/courses/{{ course.id }}/lessons/new" class="create-new-lesson">Создать новый урок</a>
+  </main>
+</div>
+</body>
+</html>

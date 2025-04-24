@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Личный кабинет</title>
+    <link href="/static/css/myaccount.css" rel="stylesheet">
+</head>
+<body>
+<header>
+    <h1>Личный кабинет</h1>
+    <a class="nav" href="/courses">Все курсы</a> | <a class="nav" href="/logout">Выйти</a>
+</header>
+
+<section class="profile-section">
+    <h2>Профиль</h2>
+    <div class="profile-info">
+        <p><strong>Имя пользователя:</strong> {{ user.name }} {{ user.surname }}</p>
+        <p><strong>Email:</strong> {{ user.email }}</p>
+        <p><strong>Телефон:</strong> {{ user.phone }}</p>
+    </div>
+</section>
+
+<section class="courses-section">
+    <h2>Мои курсы</h2>
+    {% if not enrollments %}
+        <div class="no-courses">
+            <p>Вы еще не записаны ни на один курс.</p>
+        </div>
+    {% else %}
+        <ul class="lessons-list">
+            {% for enrollment in enrollments %}
+                <li class="lesson-item">
+                    <a href="/myaccount/courses/{{ enrollment.course.id }}/lessons" class="course-card-link">
+                        <img src="{{ enrollment.course.image }}" alt="Изображение курса" class="course-image">
+                        <div class="lesson-content">
+                            <h3>{{ enrollment.course.title }}</h3>
+                            <p>{{ enrollment.course.description }}</p>
+                            <div class="progress-bar">
+                                <span style="width: {{ enrollment.progress or 0 }}%"></span>
+                            </div>
+                        </div>
+                    </a>
+                    <div class="{% if enrollment.progress == 100 %}show-certificate{% else %}hide-certificate{% endif %}">
+                        <a href="/certificate/{{ enrollment.course.id }}/{{ user.id }}" target="_blank" class="certificate-link">
+                            Скачать сертификат
+                        </a>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+</section>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Панель администратора</title>
+    <link href="{{ url_for('static', path='/css/admin.css') }}" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body>
+<a href="/logout" class="back-arrow">
+    <i class="fas fa-arrow-left"></i> Выйти
+</a>
+<header>
+    <h1>Панель администратора</h1>
+</header>
+
+<div class="dashboard-container">
+    <div class="menu-item">
+        <a href="/admin/courses-admin">
+            <button class="menu-button">Управление курсами</button>
+        </a>
+    </div>
+
+    <div class="menu-item">
+        <a href="/admin/users">
+            <button class="menu-button">Управление пользователями</button>
+        </a>
+    </div>
+</div>
+</body>
+</html>

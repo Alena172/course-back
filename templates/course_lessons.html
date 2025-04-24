@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Подключение библиотеки Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+  <link href="{{ url_for('static', path='/css/course-lessons.css') }}" rel="stylesheet">
+  <title>Уроки курса {{ course.title }}</title>
+</head>
+<body>
+<a href="/myaccount" class="back-arrow">
+  <i class="fas fa-arrow-left"></i> Назад
+</a>
+<header>
+  <h1 class="course-title">Уроки курса: {{ course.title }}</h1>
+</header>
+
+<!-- Список уроков -->
+<section class="lessons-list">
+  <ul>
+    {% for lesson in lessons %}
+      <li class="lesson-item">
+        <a class="lesson-link" href="/myaccount/courses/{{ course.id }}/lessons/{{ lesson.id }}">
+          <span class="lesson-title">{{ lesson.title }}</span>
+          {% if lessonProgressMap[lesson.id] %}
+          <span class="progress-status completed">
+            <i class="fa fa-check"></i>
+          </span>
+          {% endif %}
+        </a>
+      </li>
+    {% endfor %}
+  </ul>
+</section>
+</body>
+</html>

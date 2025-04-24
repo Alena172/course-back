@@ -1,0 +1,134 @@
+/* Основной контейнер */
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #212529; /* Темный фон */
+    color: white; /* Цвет шрифта */
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Стили для шапки */
+.header {
+    background-color: #2a2e33; /* Цвет фона хедера */
+    color: #f39c12;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.header h1 {
+    font-size: 2.5rem;
+    margin: 0;
+}
+
+/* Основной контент */
+.main-content {
+    margin-top: 30px;
+}
+
+.lesson-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* Отступы между карточками */
+}
+
+.lesson-item {
+    background-color: #2a2e33; /* Цвет фона карточек */
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: box-shadow 0.3s ease-in-out;
+}
+
+.lesson-item:hover {
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Стили для всей карточки как ссылки */
+.lesson-link {
+    display: block; /* Делает всю карточку кликабельной */
+    text-decoration: none; /* Убирает подчеркивание */
+    color: inherit; /* Наследует цвет от родителя */
+    width: 100%; /* Устанавливаем, чтобы ссылка занимала всю карточку */
+}
+
+.lesson-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.lesson-title {
+    font-size: 1.2rem;
+    color: #f6f1e9; /* Цвет шрифта для названия урока */
+    font-weight: bold;
+}
+
+/* Кнопка удаления */
+.delete-button {
+    background-color: #2a2e33;
+    color: #f39c12;;
+    border: 2px solid #f39c12;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.delete-button:hover {
+    background-color: #f39c12; /* Оранжевый фон при наведении */
+    color: white; /* Темнее оранжевый цвет для эффекта при наведении */
+}
+
+.delete-button:disabled {
+    border: none;
+    background-color: #3c4249;
+    color: #22252b;
+    cursor: not-allowed;
+}
+
+/* Ссылка на создание нового урока */
+.create-new-lesson { /* ��вет фона */
+    display: inline-block;
+    margin-top: 20px;
+    font-size: 1.1rem;
+    color: #f39c12; /* Цвет шрифта */
+    text-decoration: none;
+    padding: 10px 20px;
+    border: 2px solid #f39c12; /* Оранжевая рамка */
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+.create-new-lesson:hover {
+    background-color: #f39c12; /* Оранжевый фон при наведении */
+    color: white;
+}
+
+.back-arrow {
+    position: fixed; /* Закрепляем ссылку в определенном месте */
+    top: 10px; /* Отступ сверху */
+    left: 10px; /* Отступ слева */
+    font-size: 20px; /* Размер текста */
+    font-weight: bold; /* Жирный шрифт */
+    color: #f39c12; /* Синий цвет */
+    text-decoration: none; /* Убираем подчеркивание */
+    padding: 5px 10px; /* Отступы внутри ссылки */
+    border-radius: 5px; /* Скругленные углы */
+    background-color: transparent; /* Белый фон */
+    transition: background-color 0.3s ease; /* Плавный переход при наведении */
+}
+
+.back-arrow:hover {
+    background-color: #f39c12; /* Светлый фон при наведении */
+    color: #212529; /* Тёмно-синий цвет текста */
+}

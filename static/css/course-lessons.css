@@ -1,0 +1,117 @@
+/* Общие стили для страницы */
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #212529; /* Темный фон */
+    color: #ecf0f1; /* Светлый цвет текста */
+    margin: 0;
+    padding: 0;
+}
+
+/* Заголовок страницы */
+header {
+    text-align: center;
+    background-color: #2a2e33; /* Темно-синий фон */
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+header h1 {
+    color: #f39c12;
+    font-size: 2rem;
+    margin: 0;
+}
+
+/* Стили для списка уроков */
+.lessons-list {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.lessons-list ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.lesson-item {
+    background-color: #2a2e33; /* Темно-серый фон для элементов */
+    margin: 10px 0;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.3s;
+}
+
+.lesson-item:hover {
+    background-color: #25282e; /* Более темный фон при наведении */
+}
+
+.lesson-link {
+    color: #ecf0f1;
+    font-size: 1.1rem;
+    text-decoration: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.lesson-link:hover {
+    color: #f39c12; /* Оранжевый при наведении */
+}
+
+/* Статусы прогресса */
+.progress-status {
+    font-size: 1.2rem;
+    color: #ecf0f1;
+}
+
+.completed {
+    color: white; /* Зеленый цвет для галочки */
+}
+
+/* Иконки для состояния */
+.fa-check {
+    color: white; /* Зеленый для галочки */
+    font-size: 1.2rem;
+}
+
+
+/* Подвал страницы */
+.footer {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.btn-back {
+    display: inline-block;
+    background-color: #2a2e33; /* Темно-серый фон */
+    color: white;
+    padding: 10px 20px;
+    border-radius: 30px;
+    text-decoration: none;
+    font-size: 1.1rem;
+}
+
+.back-arrow {
+    position: fixed; /* Закрепляем ссылку в определенном месте */
+    top: 10px; /* Отступ сверху */
+    left: 10px; /* Отступ слева */
+    font-size: 24px; /* Размер текста */
+    font-weight: bold; /* Жирный шрифт */
+    color: #f39c12; /* Синий цвет */
+    text-decoration: none; /* Убираем подчеркивание */
+    padding: 5px 10px; /* Отступы внутри ссылки */
+    border-radius: 5px; /* Скругленные углы */
+    background-color: #2a2e33; /* Белый фон */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Легкая тень */
+    transition: background-color 0.3s ease; /* Плавный переход при наведении */
+}
+
+.back-arrow:hover {
+    background-color: #f39c12; /* Светлый фон при наведении */
+    color: #2a2e33; /* Тёмно-синий цвет текста */
+}
+
+.btn-back:hover {
+    background-color: #25282e; /* Более темный серый при наведении */
+}

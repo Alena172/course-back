@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <link href="{{ url_for('static', path='/css/lesson-details.css') }}" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <title>{{ lesson.title if lesson.title else 'Урок' }}</title>
+</head>
+<body>
+
+<header class="header">
+    <h1>{{ lesson.title if lesson.title else 'Не указано' }}</h1>
+</header>
+<a href="/myaccount/courses/{{ lesson.course.id }}/lessons" class="back-arrow">
+  <i class="fas fa-arrow-left"></i> Назад
+</a>
+
+<main class="container my-5">
+  <ul class="list-unstyled">
+    {% for block in lesson.blocks %}
+    <li class="mb-4">
+      <div class="block-header">
+        <h3>{{ block.title if block.title and block.title != '' else '' }}</h3>
+      </div>
+
+      {% if block.type == 'VIDEO' %}
+      <div class="block-content mb-3">
+        <iframe src="https://www.youtube.com/embed/{{ block.content.split('/')[-1] }}"
+                width="100%" height="480" frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerpolicy="strict-origin-when-cross-origin"
+                allowfullscreen>
+        </iframe>
+      </div>
+      {% endif %}
+
+      {% if block.type == 'TEXT' %}
+      <div class="block-content mb-3">
+        <p>{{ block.content if block.content and block.content != '' else 'Содержание не указано' }}</p>
+      </div>
+      {% endif %}
+
+      {% if block.type == 'IMAGE' %}
+      <div class="block-content mb-3">
+        <img src="{{ block.content }}" alt="Изображение" class="img-fluid rounded" />
+      </div>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+
+  {% if not lesson.blocks %}
+  <p class="alert alert-info">Блоки не добавлены.</p>
+  {% endif %}
+</main>
+
+{% if not lesson_progress %}
+<form class="form-inline" action="/myaccount/courses/{{ lesson.course.id }}/lessons/{{ lesson.id }}/complete" method="post">
+  <button type="submit" class="btn-success">Урок пройден</button>
+</form>
+{% endif %}
+</body>
+</html>

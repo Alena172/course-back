@@ -1,0 +1,161 @@
+/* Общие стили для страницы */
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #212529; /* Темный синий фон страницы */
+    color: #f1f1f1; /* Светлый текст */
+    margin: 0;
+    padding: 0;
+}
+
+h1, h2 {
+    color: #f39c12; /* Ярко-синий цвет для заголовков */
+    text-align: center;
+}
+
+/* Стили для карточки */
+.card {
+    background-color: #2a2e33; /* Темный синий фон для карточки */
+    border-radius: 10px; /* Закругленные углы */
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); /* Тень для карточки */
+}
+
+form h2 {
+    color: #f39c12; /* Синий цвет заголовков внутри форм */
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+/* Стили для контейнера кнопки */
+.d-grid {
+    display: grid;
+    justify-items: center; /* Центрирует содержимое по горизонтали */
+    gap: 10px; /* Отступы между элементами */
+}
+
+
+/* Кнопка */
+.btn {
+    font-size: 1.05rem;
+    width: 50%; /* Устанавливаем ширину кнопки на 50% от родительского контейнера */
+    max-width: 250px; /* Ограничиваем максимальную ширину кнопки */
+    color: #f39c12; /* Светлый синий текст */
+    background-color: #2a2e33; /* Синий фон */
+    border: 2px solid #f39c12; /* Синяя окантовка */
+    border-radius: 30px; /* Закругленные углы */
+    padding: 10px;
+    transition: all 0.3s ease; /* Плавный переход для стилей при наведении */
+}
+
+.btn:hover {
+    color: #fff;
+    background-color: #f39c12; /* Ярко-синий фон при наведении */
+    border-color: #f39c12; /* Синяя окантовка при наведении */
+    cursor: pointer; /* Указатель для кнопки */
+}
+
+.btn:focus {
+    background-color: #f39c12;
+    outline: none; /* Убираем обводку при фокусе */
+}
+.btn:active {
+    background-color: #c35d09;
+}
+
+/* Стили для формы ввода */
+input[type="email"], input[type="password"], input[type="number"], input[type="text"], input[type="url"], select {
+    font-size: 1rem;
+    padding: 10px;
+    background-color: #212529; /* Темный фон для полей ввода */
+    color: #f1f1f1; /* Светлый текст */
+    border: 1px solid #666; /* Тонкая граница */
+    border-radius: 5px; /* Закругленные углы */
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.form-control{
+    background-color: #212529;
+    border: 1px solid #666;
+    color: #f1f1f1;
+}
+
+/* Стили для textarea */
+textarea {
+    font-size: 1rem;
+    padding: 10px;
+    background-color: #212529; /* Темный фон для textarea */
+    color: #f1f1f1; /* Светлый текст */
+    border: 1px solid #666; /* Тонкая граница */
+    border-radius: 5px; /* Закругленные углы */
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+/* Стили для полей ввода и textarea при фокусе */
+input[type="email"]:focus, input[type="password"]:focus, input[type="number"]:focus, input[type="text"]:focus, input[type="url"]:focus, textarea:focus, select:focus {
+    background-color: #444; /* Чуть светлее фон при фокусе */
+    color: #fff; /* Белый текст при фокусе */
+    border-color: #f39c12; /* Синяя рамка при фокусе */
+}
+
+/* Стили для ошибок */
+.text-danger {
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: #e74c3c; /* Красный цвет для ошибок */
+}
+
+textarea {
+    background: #212529; /* Синий фон */
+}
+
+.text-center {
+    text-align: center; /* Центрирование текста */
+}
+
+/* Стили для контейнера форм */
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh; /* Полная высота экрана */
+}
+
+/* Стили для мелких элементов, таких как ссылки для переключения форм */
+small {
+    font-size: 0.8rem;
+}
+
+.form-select {
+    background-color: #272c30; /* Темный фон */
+    color: #f1f1f1; /* Светлый текст */
+    border: 1px solid #444; /* Серая рамка */
+    border-radius: 0.375rem; /* Скругленные углы */
+    padding: 0.75rem 1rem; /* Отступы */
+    transition: border-color 0.3s ease; /* Плавный переход для рамки */
+}
+
+.form-select:focus {
+    background-color: #444; /* Изменение фона при фокусе */
+    border-color: #f39c12; /* Синяя рамка при фокусе */
+    color: #fff; /* Белый текст при фокусе */
+}
+
+/* Стиль для выбора опций */
+.form-select option {
+    background-color: #212529;
+    color: #f1f1f1;
+}
+
+/* Изменение цвета текста при наведении на опцию */
+.form-select option:hover {
+    background-color: #f39c12; /* Синий фон при наведении */
+    color: #fff;
+}
+
+.back {
+    width: 100%;
+    font-size: 0.8rem;
+    color: #f39c12; /* Синий цвет текста */
+}

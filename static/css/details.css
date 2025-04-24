@@ -1,0 +1,146 @@
+/* Общий стиль */
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #212529;
+    color: #f1f1f1;
+    margin: 0;
+    padding: 0;
+}
+
+header {
+    text-align: center;
+    margin: 20px 0;
+}
+
+header h1 {
+    color: #f39c12;
+    font-size: 2.5rem;
+}
+
+header .back-link {
+    display: inline-block;
+    margin-top: 10px;
+    color: #f39c12;
+    text-decoration: none;
+    font-size: 1rem;
+    border: 2px solid #f39c12;
+    padding: 5px 15px;
+    border-radius: 5px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+header .back-link:hover {
+    background-color: #f39c12;
+    color: #212529;
+}
+
+/* Контейнер курса */
+.course-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 800px;
+    margin: 0 auto;
+    background-color: #2a2e33;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Изображение курса */
+.course-image img {
+    max-width: 100%;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+}
+
+/* Детали курса */
+.course-details {
+    text-align: left;
+    width: 100%;
+}
+
+.course-details p {
+    font-size: 1rem;
+    margin: 10px 0;
+}
+
+.course-details strong {
+    color: #f39c12;
+}
+
+/* Кнопка записи на курс */
+.enroll-form {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.enroll-form .btn {
+    background-color: #f39c12;
+    color: #212529;
+    border: none;
+    border-radius: 30px;
+    padding: 10px 20px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.enroll-form .btn:hover {
+    background-color: #d88700;
+    transform: scale(1.05);
+}
+
+.enroll-form .btn:disabled {
+    background-color: #777;
+    cursor: not-allowed;
+}
+
+.enrollment-status {
+    display: block;
+    margin-top: 10px;
+    font-size: 1rem;
+    color: #777;
+}
+
+
+.back-arrow {
+    position: fixed; /* Закрепляем ссылку в определенном месте */
+    top: 10px; /* Отступ сверху */
+    left: 10px; /* Отступ слева */
+    font-size: 24px; /* Размер текста */
+    font-weight: bold; /* Жирный шрифт */
+    color: #f39c12; /* Синий цвет */
+    text-decoration: none; /* Убираем подчеркивание */
+    padding: 5px 10px; /* Отступы внутри ссылки */
+    border-radius: 5px; /* Скругленные углы */
+    background-color: #212529; /* Белый фон */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Легкая тень */
+    transition: background-color 0.3s ease; /* Плавный переход при наведении */
+}
+
+.back-arrow:hover {
+    background-color: #f39c12; /* Светлый фон при наведении */
+    color: #212529; /* Тёмно-синий цвет текста */
+}
+
+/* Мобильная версия */
+@media (max-width: 768px) {
+    .course-container {
+        padding: 15px;
+    }
+
+    header h1 {
+        font-size: 2rem;
+    }
+
+    .course-details p {
+        font-size: 0.9rem;
+    }
+
+    .enroll-form .btn {
+        font-size: 1rem;
+        padding: 8px 16px;
+    }
+}

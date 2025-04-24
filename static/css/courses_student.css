@@ -1,0 +1,120 @@
+/* Общие стили */
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #212529;
+    color: #f1f1f1;
+    margin: 0;
+    padding: 0;
+}
+
+header {
+    text-align: center;
+    margin: 20px 0;
+}
+
+header h1 {
+    color: #f39c12;
+}
+
+.item-title {
+    text-decoration: none;
+    color: white
+}
+
+nav .my-courses-link {
+    display: block;
+    text-align: center;
+    margin-bottom: 20px;
+    color: #f39c12;
+    border-radius: 30px;
+    border: 2px solid #f39c12;
+    text-decoration: none;
+    padding: 5px 15px;
+    font-size: 1.2rem;
+}
+
+nav .my-courses-link:hover {
+    color: #ffffff;
+    background-color: #f39c12;
+    padding: 5px 15px;
+    border-radius: 5px;
+}
+
+/* Сетка для карточек курсов */
+.courses-list {
+    display: flex;
+    flex-wrap: wrap; /* Позволяет переносить карточки на новую строку */
+    justify-content: center; /* Центрует карточки */
+    gap: 20px; /* Расстояние между карточками */
+    padding: 20px 40px; /* Отступы по краям */
+}
+
+/* Карточки курсов */
+.course-item {
+    flex: 0 1 calc(30% - 20px); /* 3 карточки в ряду, более узкие */
+    box-sizing: border-box;
+    background-color: #2a2e33;
+    color: #f1f1f1;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    transition: transform 0.3s ease;
+}
+
+.course-item:hover {
+    transform: translateY(-10px);
+}
+
+/* Заголовок курса */
+.course-item h2 {
+    font-size: 1.5rem;
+    color: #f39c12;
+}
+
+.course-item p {
+    font-size: 1rem;
+    margin: 10px 0;
+}
+
+/* Изображение курса */
+.course-image {
+    margin: 15px 0;
+}
+
+.course-img {
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+}
+
+/* Кнопка "Записаться" */
+.course-item .btn {
+    display: inline-block;
+    background-color: #2a2e33;
+    color: #f39c12;
+    border: 2px solid #f39c12;
+    border-radius: 30px;
+    padding: 10px 20px;
+    text-decoration: none;
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+}
+
+.course-item .btn:hover {
+    background-color: #f39c12;
+    color: #ffffff;
+}
+
+/* Мобильная версия */
+@media (max-width: 1024px) {
+    .course-item {
+        flex: 0 1 calc(45% - 20px); /* 2 карточки в ряду */
+    }
+}
+
+@media (max-width: 768px) {
+    .course-item {
+        flex: 0 1 calc(100% - 20px); /* 1 карточка в ряду */
+    }
+}

@@ -1,0 +1,169 @@
+/* Общие стили */
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #212529; /* Темно-серый фон */
+    color: #f39c12; /* Оранжевый текст */
+    margin: 0;
+    padding: 0;
+    line-height: 1.6; /* Увеличиваем межстрочный интервал для лучшей читаемости */
+}
+
+.header {
+    background-color: #2a2e33; /* Цвет фона хедера */
+    color: #f39c12;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.header h1 {
+    font-size: 2.5rem;
+    margin: 0;
+}
+
+main.container {
+    padding: 5px 15px;
+    max-width: 1100px;
+    margin: 0 auto;
+    background-color: #2a2e33; /* Цвет фона для основного контента */
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    line-height: 1.7; /* Увеличиваем межстрочный интервал */
+}
+
+h2 {
+    font-size: 2rem;
+    color: #f39c12; /* Оранжевый */
+    margin-bottom: 0px;
+}
+
+.block-header h3 {
+    margin-top: 0;
+    margin-bottom: 0;
+    font-size: 1.6rem;
+    color: #f39c12;
+    margin-left: 25px;
+    border: none;
+/*    margin-bottom: 10px;*/
+    font-weight: bold;
+}
+
+ul.list-unstyled {
+    padding: 0;
+    list-style: none;
+}
+
+.block-content {
+    word-wrap: break-word; /* Переносит длинные строки */
+    overflow-wrap: break-word;
+    white-space: normal;
+    word-break: break-word;
+    text-align: justify;
+    background-color: #2a2e33; /* Цвет фона блоков */
+    padding-left: 25px;
+    padding-right: 25px;
+    border-radius: 10px;
+/*    margin-bottom: 25px;*/
+/*    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);*/
+}
+
+.block-content p {
+    margin: 3px;
+    color: #cbcfd3;
+    font-size: 1.2rem;
+    line-height: 1.8; /* Увеличиваем межстрочный интервал для текста */
+}
+
+iframe {
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+}
+
+img {
+    border-radius: 10px;
+    max-width: 100%;
+    height: auto;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+footer {
+    background-color: #212529;
+    padding: 25px 0;
+    color: #f39c12;
+    text-align: center;
+    box-shadow: 0 -4px 8px rgba(0, 0, 0, 0.2);
+}
+
+footer .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+footer a {
+    color: #f39c12;
+    text-decoration: none;
+    font-size: 1.1rem;
+    transition: color 0.3s ease;
+}
+
+footer a:hover {
+    color: #f59e42; /* Немного ярче оранжевый для эффекта при наведении */
+}
+
+.btn-success {
+    background-color: #212529;
+    border: 2px solid #f39c12;
+    padding: 12px 24px;
+    border-radius: 5px;
+    color: #f39c12;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.btn-success:hover {
+    background-color: #f39c12;
+    color: white;
+}
+
+.alert-info {
+    background-color: #333c54;
+    color: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+    font-size: 1.1rem;
+}
+
+.alert-info p {
+    margin: 0;
+}
+
+.form-inline {
+    margin-top: 40px;
+    margin-bottom: 40px;
+    align-items: center;
+    align-content: center;
+    text-align: center;
+}
+
+.back-arrow {
+    position: fixed; /* Закрепляем ссылку в определенном месте */
+    top: 10px; /* Отступ сверху */
+    left: 10px; /* Отступ слева */
+    font-size: 20px; /* Размер текста */
+    font-weight: bold; /* Жирный шрифт */
+    color: #f39c12; /* Синий цвет */
+    text-decoration: none; /* Убираем подчеркивание */
+    padding: 5px 10px; /* Отступы внутри ссылки */
+    border-radius: 5px; /* Скругленные углы */
+    background-color: transparent; /* Белый фон */
+    transition: background-color 0.3s ease; /* Плавный переход при наведении */
+}
+
+.back-arrow:hover {
+    background-color: #f39c12; /* Светлый фон при наведении */
+    color: #212529; /* Тёмно-синий цвет текста */
+}

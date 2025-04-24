@@ -1,0 +1,152 @@
+/* Общие стили для страницы */
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #212529; /* Темный фон страницы */
+    color: #f1f1f1; /* Светлый текст */
+    margin: 0;
+    padding: 0;
+}
+
+/* Заголовки */
+h2 {
+    text-align: center;
+    color: #f39c12; /* Оранжевый цвет для заголовков */
+    margin-top: 30px;
+}
+
+/* Кнопки */
+.btn {
+    display: inline-block;
+    font-size: 1.2rem;
+    background-color: #2a2e33; /* Темный фон для кнопок */
+    color: #f39c12; /* Оранжевый цвет текста */
+    border: 2px solid #f39c12; /* Оранжевая окантовка */
+    border-radius: 30px; /* Закругленные углы */
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.btn:hover {
+    background-color: #f39c12;
+    color: white;
+    border-color: #f39c12;
+}
+
+/* Стили для кнопки "Создать нового пользователя" */
+.btn-primary {
+    margin-bottom: 20px;
+    display: block;
+    width: auto;
+}
+
+/* Стили для таблицы */
+.table {
+    width: 80%;
+    margin: 0 auto;
+    margin-top: 20px;
+    border-collapse: collapse;
+    background-color: #2a2e33;
+    color: #f1f1f1;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* Стили для заголовков таблицы */
+.table th, .table td {
+    padding: 12px;
+    text-align: center;
+    border: 1px solid #373d42;
+}
+
+/* Стили для строк таблицы */
+.table tr:nth-child(even) {
+    background-color: #373d42;
+}
+
+.table th {
+    background-color: #434950;
+}
+
+/* Стили для кнопок внутри таблицы */
+.table .btn {
+    font-size: 1rem;
+    padding: 5px 15px;
+    margin-right: 10px; /* Отступ между кнопками */
+}
+
+
+.table .btn {
+    font-size: 1rem;
+    padding: 5px 15px;
+    margin-right: 10px; /* Отступ между кнопками */
+}
+
+/* Кнопка "Редактировать" (оранжевая окантовка) */
+.table .btn-warning {
+    background-color: #2a2e33;
+    color: #f39c12;
+    border: 2px solid #2a2e33;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.table .btn-warning:hover {
+    background-color: #f39c12;
+    color: white;
+    border-color: #f39c12;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+}
+
+/* Кнопка "Удалить" (красная окантовка) */
+.table .btn-danger {
+    background-color: #2a2e33;
+    color: #e74c3c;
+    border: 2px solid #2a2e33;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.table .btn-danger:hover {
+    background-color: #e74c3c;
+    color: white;
+    border-color: #e74c3c;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+}
+
+/* Убедитесь, что форма для кнопки "Удалить" не ломает расположение */
+.table .d-inline-block {
+    display: inline-block;
+}
+
+.back-arrow {
+    position: fixed; /* Закрепляем ссылку в определенном месте */
+    top: 10px; /* Отступ сверху */
+    left: 10px; /* Отступ слева */
+    font-size: 24px; /* Размер текста */
+    font-weight: bold; /* Жирный шрифт */
+    color: #f39c12; /* Синий цвет */
+    text-decoration: none; /* Убираем подчеркивание */
+    padding: 5px 10px; /* Отступы внутри ссылки */
+    border-radius: 5px; /* Скругленные углы */
+    background-color: #212529; /* Белый фон */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Легкая тень */
+    transition: background-color 0.3s ease; /* Плавный переход при наведении */
+}
+
+.back-arrow:hover {
+    background-color: #f39c12; /* Светлый фон при наведении */
+    color: #212529; /* Тёмно-синий цвет текста */
+}
+
+/* Мобильная версия */
+@media (max-width: 768px) {
+    .table {
+        width: 100%;
+    }
+
+    .btn {
+        font-size: 1rem;
+        padding: 8px 16px;
+    }
+}

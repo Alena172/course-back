@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ course.title }} - Детали курса</title>
+    <link href="{{ url_for('static', path='/css/details.css') }}" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body>
+<header>
+    <h1>{{ course.title }}</h1>
+</header>
+
+<a href="/courses" class="back-arrow">
+    <i class="fas fa-arrow-left"></i> Назад
+</a>
+
+<main>
+    <div class="course-container">
+        <!-- Изображение курса -->
+        <div class="course-image">
+            <img src="{{ course.image }}" alt="Фото курса" />
+        </div>
+
+        <!-- Информация о курсе -->
+        <div class="course-details">
+            <p style="text-align: justify;">
+                <strong>Описание:</strong> <span>{{ course.description }}</span>
+            </p>
+            <p><strong>Категория:</strong> <span>{{ course.category }}</span></p>
+            <p><strong>Преподаватель:</strong>
+                <span>
+                    {% if course.instructor %}
+                        {{ course.instructor.name }} {{ course.instructor.surname }}
+                    {% else %}
+                        Не указан
+                    {% endif %}
+                </span>
+            </p>
+            <p><strong>Продолжительность:</strong> <span>{{ course.duration }}</span> месяцев</p>
+            <p><strong>Цена:</strong> <span>{{ course.price }}</span> руб.</p>
+        </div>
+
+        <!-- Кнопка записи на курс -->
+        {% if not enrollment or enrollment.status != 'ACTIVE' %}
+        <form action="/enroll/{{ course.id }}" method="post" class="enroll-form">
+            <button type="submit" class="btn">
+                Записаться на курс
+            </button>
+        </form>
+        {% endif %}
+
+        <!-- Если пользователь уже записан на курс с активным статусом -->
+        {% if enrollment and enrollment.status == 'ACTIVE' %}
+        <span class="enrollment-status">
+            Вы уже записаны на этот курс.
+        </span>
+        {% endif %}
+    </div>
+</main>
+</body>
+</html>

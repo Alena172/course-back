@@ -1,0 +1,87 @@
+/* Общие стили для страницы */
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #212529; /* Темный фон страницы */
+    color: #f1f1f1; /* Светлый текст */
+    margin: 0;
+    padding: 0;
+}
+
+/* Стили для заголовка */
+header {
+    background-color: #2a2e33;
+    padding: 20px;
+    text-align: center;
+}
+
+h1 {
+    color: #f39c12; /* Оранжевый цвет для заголовков */
+    margin: 0;
+}
+
+/* Контейнер для элементов панели */
+.dashboard-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh; /* Высота контейнера */
+    padding: 20px;
+}
+
+/* Стиль для элементов меню */
+.menu-item {
+    margin: 15px 0;
+}
+
+/* Стиль для кнопок в меню */
+.menu-button {
+    font-size: 1.2rem;
+    background-color: #2a2e33; /* Темный фон для кнопок */
+    color: #f39c12; /* Оранжевый цвет текста */
+    border: 2px solid #f39c12; /* Оранжевая окантовка */
+    border-radius: 30px; /* Закругленные углы */
+    padding: 15px 30px;
+    text-align: center;
+    width: 400px;
+    transition: all 0.3s ease; /* Плавный переход для стилей при наведении */
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.back-arrow {
+    position: fixed; /* Закрепляем ссылку в определенном месте */
+    top: 10px; /* Отступ сверху */
+    left: 10px; /* Отступ слева */
+    font-size: 20px; /* Размер текста */
+    font-weight: bold; /* Жирный шрифт */
+    color: #f39c12; /* Синий цвет */
+    text-decoration: none; /* Убираем подчеркивание */
+    padding: 5px 10px; /* Отступы внутри ссылки */
+    border-radius: 5px; /* Скругленные углы */
+    background-color: transparent; /* Белый фон */
+    transition: background-color 0.3s ease; /* Плавный переход при наведении */
+}
+
+.back-arrow:hover {
+    background-color: #f39c12; /* Светлый фон при наведении */
+    color: #212529; /* Тёмно-синий цвет текста */
+}
+
+.menu-button:hover {
+    background-color: #f39c12; /* Оранжевая кнопка при наведении */
+    color: white; /* Белый текст при наведении */
+    border-color: #f39c12; /* Оранжевая окантовка при наведении */
+}
+
+/* Дополнительные стили для мобильных устройств */
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 10px;
+    }
+
+    .menu-button {
+        width: 100%; /* Кнопки будут растягиваться на всю ширину на мобильных устройствах */
+        font-size: 1rem;
+    }
+}
