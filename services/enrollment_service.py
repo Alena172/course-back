@@ -15,6 +15,14 @@ def find_enrollment(db: Session, user_id: int, course_id: int) -> Optional[Enrol
     return db.query(Enrollment).filter_by(user_id=user_id, course_id=course_id).first()
 
 
+def has_active_enrollment(db: Session, user_id: int, course_id: int) -> bool:
+    enrollment = db.query(Enrollment).filter(
+        Enrollment.user_id == user_id,
+        Enrollment.course_id == course_id,
+        Enrollment.status == StatusEnum.ACTIVE
+    ).first()
+    return enrollment is not None
+
 # ➕ Записать пользователя на курс (с проверкой существующей подписки)
 def enroll_user_in_course(db: Session, user_id: int, course_id: int) -> Optional[Enrollment]:
     # Проверяем, не записан ли пользователь уже на этот курс

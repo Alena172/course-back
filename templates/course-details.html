@@ -72,7 +72,10 @@
     {% else %}
     <div class="alert alert-secondary enrollment-status">
         <i class="fas fa-info-circle"></i>
-        Ваш статус подписки: {{ enrollment.status }}
+        <span>Вы успешно записаны на этот курс</span>
+        <a href="/myaccount/courses/{{ course.id }}/lessons" class="btn btn-outline-success">
+            Перейти к обучению
+        </a>
     </div>
     {% endif %}
 </div>

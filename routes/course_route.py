@@ -115,13 +115,23 @@ async def show_courses(
 
 # 📌 /course-details/{id}
 @router.get("/course-details/{id}", response_class=HTMLResponse)
-async def get_course_details(id: int, request: Request, db: Session = Depends(get_db)):
+async def get_course_details(
+    id: int, 
+    request: Request, 
+    db: Session = Depends(get_db)
+):
     user = await get_current_user(request, db)
     course = course_service.find_course_by_id(db, id)
+    
+    enrollment = None
+    if user:
+        enrollment = enrollment_service.find_enrollment(db, user.id, id)
+    
     return templates.TemplateResponse("course-details.html", {
         "request": request,
         "course": course,
-        "userId": user.id
+        "user": user,
+        "enrollment": enrollment
     })
 
 # 📌 /myaccount/courses/{course_id}/lessons
