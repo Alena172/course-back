@@ -7,32 +7,42 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from io import BytesIO
 from datetime import datetime
-
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 
 def generate_certificate_pdf(course, user):
+    # Регистрируем русскоязычный шрифт
+    pdfmetrics.registerFont(TTFont('DejaVuSans', 'DejaVuSans.ttf'))
+    pdfmetrics.registerFont(TTFont('DejaVuSans-Bold', 'DejaVuSans-Bold.ttf'))
+    
     buffer = BytesIO()
     p = canvas.Canvas(buffer, pagesize=A4)
     
     width, height = A4
-    p.setFont("Helvetica-Bold", 28)
+    
+    # Заголовок
+    p.setFont('DejaVuSans-Bold', 28)
     p.drawCentredString(width / 2, height - 100, "СЕРТИФИКАТ")
 
-    p.setFont("Helvetica", 16)
-    p.drawCentredString(width / 2, height - 160, f"Настоящим подтверждается, что")
+    # Основной текст
+    p.setFont('DejaVuSans', 16)
+    p.drawCentredString(width / 2, height - 160, "Настоящим подтверждается, что")
     
-    p.setFont("Helvetica-Bold", 18)
+    p.setFont('DejaVuSans-Bold', 18)
     p.drawCentredString(width / 2, height - 190, f"{user.name} {user.surname}")
 
-    p.setFont("Helvetica", 16)
-    p.drawCentredString(width / 2, height - 230, f"успешно завершил курс:")
-    p.setFont("Helvetica-Bold", 18)
+    p.setFont('DejaVuSans', 16)
+    p.drawCentredString(width / 2, height - 230, "успешно завершил(а) курс:")
+    p.setFont('DejaVuSans-Bold', 18)
     p.drawCentredString(width / 2, height - 260, f"{course.title}")
 
-    p.setFont("Helvetica", 14)
+    # Дополнительная информация
+    p.setFont('DejaVuSans', 14)
     p.drawCentredString(width / 2, height - 300, f"Длительность: {course.duration} месяцев")
-    p.drawCentredString(width / 2, height - 330, f"Дата выдачи: {datetime.now().date()}")
+    p.drawCentredString(width / 2, height - 330, f"Дата выдачи: {datetime.now().strftime('%d.%m.%Y')}")
 
-    p.setFont("Helvetica-Oblique", 12)
+    # Подпись
+    p.setFont('DejaVuSans', 12)
     p.drawCentredString(width / 2, 100, "Подпись организатора: __________________________")
 
     p.showPage()
