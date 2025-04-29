@@ -15,8 +15,13 @@ def find_enrollment(db: Session, user_id: int, course_id: int) -> Optional[Enrol
     return db.query(Enrollment).filter_by(user_id=user_id, course_id=course_id).first()
 
 
-# ➕ Записать пользователя на курс
-def enroll_user_in_course(db: Session, user_id: int, course_id: int) -> Enrollment:
+# ➕ Записать пользователя на курс (с проверкой существующей подписки)
+def enroll_user_in_course(db: Session, user_id: int, course_id: int) -> Optional[Enrollment]:
+    # Проверяем, не записан ли пользователь уже на этот курс
+    existing_enrollment = find_enrollment(db, user_id, course_id)
+    if existing_enrollment:
+        return None  # или можно вернуть существующую запись
+    
     # Создаем запись о зачислении
     enrollment = Enrollment(
         user_id=user_id,

@@ -11,7 +11,8 @@ from models.course import Course
 from services import course_service, enrollment_service, user_service, lesson_service, block_service, lesson_progress_service
 from models.block import Block, BlockType
 from models.lesson import Lesson
-from models.user import RoleEnum
+from models.user import RoleEnum, User
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -55,6 +56,40 @@ def get_active_courses(db: Session) -> List[Course]:
         # Логируем ошибку, если что-то пошло не так
         print(f"Error fetching active courses: {str(e)}")
         raise  # Можно заменить на возврат пустого списка [] в продакшене
+
+
+async def verify_student_access(request: Request, db: Session) -> User:
+    """Верификация студента"""
+    user = await get_current_user(request, db)
+    if not user:
+        raise HTTPException(
+            status_code=302,
+            headers={"Location": "/login"},
+            detail="Authorization required"
+        )
+    if user.role != RoleEnum.STUDENT:
+        raise HTTPException(
+            status_code=302,
+            headers={"Location": "/teacher/courses" if user.role == RoleEnum.TEACHER else "/admin/dashboard"},
+            detail="Access denied"
+        )
+    return user
+
+async def verify_teacher_access(request: Request, db: Session) -> User:
+    """Верификация преподавателя"""
+    user = await get_current_user(request, db)
+    if not user:
+        raise HTTPException(
+            status_code=302,
+            headers={"Location": "/login"},
+            detail="Authorization required"
+        )
+    if user.role != RoleEnum.TEACHER:
+        raise HTTPException(
+            status_code=403,
+            detail="Teacher access required"
+        )
+    return user
 
 
 @router.get("/courses")

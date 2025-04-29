@@ -7,8 +7,7 @@ from routes import (
     lesson_route,
     block_route,
     enrollment_route,
-    certificate_route,
-    myaccount_route
+    certificate_route
 )
 from database import Base, engine
 from fastapi.staticfiles import StaticFiles
@@ -30,4 +29,3 @@ app.include_router(enrollment_route.router)
 app.include_router(lesson_progress_route.router)
 app.include_router(certificate_route.router)
 app.include_router(admin_route.router)
-# app.include_router(myaccount_route.router)

@@ -4,17 +4,18 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 
 
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
+SQLALCHEMY_DATABASE_URL = "postgresql://postgres:password@localhost/course-back"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False}
+    pool_size=10,
+    max_overflow=20,
+    pool_timeout=30,
+    pool_recycle=3600,
+    echo=True  # Для отладки SQL-запросов
 )
 
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
@@ -26,3 +27,11 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+if __name__ == "__main__":
+    try:
+        with engine.connect() as conn:
+            print("✅ Подключение к PostgreSQL успешно установлено!")
+    except Exception as e:
+        print(f"❌ Ошибка подключения к PostgreSQL: {e}")
