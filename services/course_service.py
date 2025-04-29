@@ -5,6 +5,7 @@ from models.course import Course, StatusEnum
 from models.user import User, RoleEnum
 from schemas.course import CourseCreate
 import logging
+from sqlalchemy.orm import joinedload 
 
 logger = logging.getLogger("course_service")
 
@@ -102,7 +103,20 @@ def course_exists(db: Session, course_id: int) -> bool:
 
 # ✅ Получить все курсы
 def get_all_courses(db: Session) -> List[Course]:
-    return db.query(Course).all()
+    courses = db.query(Course).all()
+    
+    # Получаем всех преподавателей одним запросом
+    instructor_ids = {c.instructor_id for c in courses if c.instructor_id}
+    instructors = {i.id: i for i in db.query(User).filter(User.id.in_(instructor_ids)).all()} if instructor_ids else {}
+    
+    # Добавляем преподавателя к каждому курсу
+    for course in courses:
+        if course.instructor_id:
+            course.instructor = instructors.get(course.instructor_id)
+        else:
+            course.instructor = None
+    
+    return courses
 
 
 # ✅ Найти курс по ID
