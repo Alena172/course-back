@@ -514,7 +514,7 @@ async def mark_lesson_complete(
         lesson_progress_service.mark_completed(db, user, lesson)
         
         return RedirectResponse(
-            f"/myaccount/courses/{course_id}/lessons/{lesson_id}",
+            f"/myaccount/courses/{course_id}/lessons",
             status_code=302
         )
         

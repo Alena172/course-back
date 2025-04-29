@@ -46,12 +46,12 @@ async def enroll_in_course(course_id: int, request: Request, db: Session = Depen
     existing_enrollment = enrollment_service.find_enrollment(db, user.id, course_id)
     if existing_enrollment:
         # Пользователь уже записан - перенаправляем без создания новой записи
-        return RedirectResponse(f"/course-details/{course_id}", status_code=303)
+        return RedirectResponse("/myaccount", status_code=303)
 
     # Если не записан - создаем новую запись
     enrollment_service.enroll_user_in_course(db, user.id, course_id)
 
-    return RedirectResponse(f"/course-details/{course_id}", status_code=303)
+    return RedirectResponse("/myaccount", status_code=303)
 
 
 # @router.get("/certificate/{course_id}/{user_id}")
