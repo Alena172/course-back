@@ -1,4 +1,5 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import RedirectResponse
 from app.routes import (
     admin_route,
     course_route,
@@ -18,6 +19,10 @@ app = FastAPI()
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+@app.exception_handler(404)
+async def not_found_handler(request: Request, exc: HTTPException):
+    return RedirectResponse(url="/login")
 
 Base.metadata.create_all(bind=engine)
 
