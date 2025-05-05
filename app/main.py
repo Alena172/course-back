@@ -20,6 +20,10 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
+@app.get("/")  # <- Обязательно добавьте этот роут!
+def read_root():
+    return {"message": "Hello from FastAPI on Vercel!"}
+
 @app.exception_handler(404)
 async def not_found_handler(request: Request, exc: HTTPException):
     return RedirectResponse(url="/login")
