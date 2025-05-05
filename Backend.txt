@@ -1,0 +1,2489 @@
+
+
+========================================
+Файл: C:\Бэк_купсач\course_v1\app\auth\auth_bearer.py
+========================================
+
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import Request, HTTPException
+from jose import JWTError
+from app.auth.auth_handler import decode_token
+
+class JWTBearer(HTTPBearer):
+    def __init__(self, auto_error: bool = True):
+        super(JWTBearer, self).__init__(auto_error=auto_error)
+
+    async def __call__(self, request: Request):
+        credentials: HTTPAuthorizationCredentials = await super().__call__(request)
+        if credentials:
+            try:
+                payload = decode_token(credentials.credentials)
+                return payload  # {'sub': user_id}
+            except JWTError:
+                raise HTTPException(status_code=403, detail="Invalid token")
+        else:
+            raise HTTPException(status_code=403, detail="Authorization required")
+
+
+========================================
+Файл: C:\Бэк_купсач\course_v1\app\auth\auth_handler.py
+========================================
+
+from datetime import datetime, timedelta
+from jose import jwt
+from passlib.context import CryptContext
+
+SECRET_KEY = "secret_string"  # Замени на что-то сложное
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
+
+
+def create_access_token(data: dict, role: str, expires_delta: timedelta = None):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    to_encode.update({"exp": expire, "role": role})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+def decode_token(token: str):
+    try:
+        # Удаляем 'Bearer ' если есть
+        if token.startswith("Bearer "):
+            token = token[7:]
+            
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload.get("sub")  # Возвращаем email
+    except jwt.ExpiredSignatureError:
+        print("Token expired")
+        return None
+    except jwt.JWTError:
+        print("Invalid token")
+        return None
+
+
+
+
+# def decode_token(token: str):
+#     return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+
+
+# def decode_access_token(token: str):
+#     try:
+#         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+#         return payload.get("sub")
+#     except JWTError:
+#         return None
+
+
+========================================
+Файл: C:\Бэк_купсач\course_v1\app\auth\role_checker.py
+========================================
+
+from fastapi import Depends, HTTPException, status
+from app.auth.auth_bearer import JWTBearer
+
+def RoleChecker(allowed_roles: list[str]):
+    def checker(payload: dict = Depends(JWTBearer())):
+        role = payload.get("role")
+        if role not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have permission for this action"
+            )
+        return payload
+    return checker
+
+
+========================================
+Файл: C:\Бэк_купсач\course_v1\app\database.py
+========================================
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
+
+
+
+
+SQLALCHEMY_DATABASE_URL = "postgresql://postgres:password@localhost/course-back"
+
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    pool_size=10,
+    max_overflow=20,
+    pool_timeout=30,
+    pool_recycle=3600,
+    echo=True  # Для отладки SQL-запросов
+)
+
+
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+Base = declarative_base()
+
+# Зависимость для получения сессии базы данных
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+if __name__ == "__main__":
+    try:
+        with engine.connect() as conn:
+            print("✅ Подключение к PostgreSQL успешно установлено!")
+    except Exception as e:
+        print(f"❌ Ошибка подключения к PostgreSQL: {e}")
+
+
+========================================
+Файл: C:\Бэк_купсач\course_v1\app\main.py
+========================================
+
+from fastapi import FastAPI
+from app.routes import (
+    admin_route,
+    course_route,
+    lesson_progress_route,
+    user_route,
+    lesson_route,
+    block_route,
+    enrollment_route,
+    certificate_route
+)
+from app.database import Base, engine
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+
+
+app = FastAPI()
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
+
+Base.metadata.create_all(bind=engine)
+
+app.include_router(course_route.router)
+app.include_router(user_route.router)
+app.include_router(lesson_route.router)
+app.include_router(block_route.router)
+app.include_router(enrollment_route.router)
+app.include_router(lesson_progress_route.router)
+app.include_router(certificate_route.router)
+app.include_router(admin_route.router)
+
+========================================
+Файл: C:\Бэк_купсач\course_v1\app\models\block.py
+========================================
+
+from sqlalchemy import Column, Integer, String, Enum, ForeignKey
+from sqlalchemy.orm import relationship
+from app.database import Base
+import enum
+
+class BlockType(str, enum.Enum):
+    TEXT = "TEXT"
+    IMAGE = "IMAGE"
+    VIDEO = "VIDEO"
+
+class Block(Base):
+    __tablename__ = 'blocks'
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String)
+    content = Column(String)
+    type = Column(Enum(BlockType))
+
+    lesson_id = Column(Integer, ForeignKey("lessons.id"))
+    lesson = relationship("Lesson", back_populates="blocks")
+
+
+========================================
+Файл: C:\Бэк_купсач\course_v1\app\models\certificate.py
+========================================
+
+from sqlalchemy import Column, Integer, ForeignKey, DateTime, String
+from sqlalchemy.orm import relationship
+from datetime import datetime
+from app.database import Base
+
+class Certificate(Base):
+    __tablename__ = "certificates"
+    id = Column(Integer, primary_key=True, index=True)
+    course_id = Column(Integer, ForeignKey("course.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
+    issue_date = Column(DateTime, default=datetime.now)
+    certificate_code = Column(String, unique=True)
+
+    user = relationship("User", back_populates="certificates")
+    course = relationship("Course")
+
+
+========================================
+Файл: C:\Бэк_купсач\course_v1\app\models\course.py
+========================================
+
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, Enum, Numeric
+from sqlalchemy.orm import relationship
+from app.database import Base
+import enum
+
+class StatusEnum(str, enum.Enum):
+    ACTIVE = "ACTIVE"
+    INACTIVE = "INACTIVE"
+    ENROLLED = "ENROLLED"
+    COMPLETE = "COMPLETE"
+
+    @property
+    def display_name(self):
+        return {
+            'ACTIVE': 'Активен',
+            'INACTIVE': 'Неактивен',
+        }.get(self.value, self.value)
+    
+
+class Course(Base):
+    __tablename__ = "course"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    description = Column(Text)
+    instructor_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    duration = Column(Integer)
+    price = Column(Numeric)
+    category = Column(String, nullable=False)
+    status = Column(Enum(StatusEnum), nullable=False)
+    image = Column(String)
+
+    @property
+    def instructor(self):
+        if hasattr(self, '_instructor'):
+            return self._instructor
+        return None
+    
+    @instructor.setter
+    def instructor(self, value):
+        self._instructor = value
+    
+    lessons = relationship("Lesson", back_populates="course", cascade="all, delete")
+    enrollments = relationship("Enrollment", back_populates="course", cascade="all, delete")
+    
+
+
+
+========================================
+Файл: C:\Бэк_купсач\course_v1\app\models\enrollment.py
+========================================
+
+from sqlalchemy import Column, Integer, ForeignKey, Enum
+from sqlalchemy.orm import relationship
+from app.database import Base
+import enum
+
+class StatusEnum(str, enum.Enum):
+    ENROLLED = "ENROLLED"
+    COMPLETED = "COMPLETED"
+
+class Enrollment(Base):
+    __tablename__ = "enrollments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    course_id = Column(Integer, ForeignKey("course.id"))
+    status = Column(Enum(StatusEnum), default=StatusEnum.ENROLLED)
+
+    user = relationship("User", back_populates="enrollments")
+    course = relationship("Course", back_populates="enrollments")
+
+
+========================================
+Файл: C:\Бэк_купсач\course_v1\app\models\lesson.py
+========================================
+
+from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy.orm import relationship
+from app.database import Base
+
+class Lesson(Base):
+    __tablename__ = 'lessons'
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    course_id = Column(Integer, ForeignKey("course.id"))
+
+    course = relationship("Course", back_populates="lessons")
+    blocks = relationship("Block", back_populates="lesson", cascade="all, delete")
+    progress = relationship("LessonProgress", back_populates="lesson", cascade="all, delete-orphan")
+
+
+
+========================================
+Файл: C:\Бэк_купсач\course_v1\app\models\lesson_progress.py
+========================================
+
+from sqlalchemy import Column, Integer, Boolean, ForeignKey
+from sqlalchemy.orm import relationship
+from app.database import Base
+
+class LessonProgress(Base):
+    __tablename__ = "progress"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    lesson_id = Column(Integer, ForeignKey("lessons.id"))
+    is_completed = Column(Boolean, default=False)
+
+    user = relationship("User", back_populates="progress")
+    lesson = relationship("Lesson", back_populates="progress")
+
+
+========================================
+Файл: C:\Бэк_купсач\course_v1\app\models\user.py
+========================================
+
+from sqlalchemy import Column, DateTime, Integer, String, Enum
+from sqlalchemy.orm import relationship
+from app.database import Base
+from enum import Enum as PyEnum
+from datetime import datetime
+
+class RoleEnum(str, PyEnum):
+    STUDENT = "STUDENT"
+    TEACHER = "TEACHER"
+    ADMIN = "ADMIN"
+
+class User(Base):
+    __tablename__ = "users"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)
+    surname = Column(String)
+    email = Column(String, unique=True)
+    phone = Column(String)
+    password = Column(String)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    role = Column(Enum(RoleEnum), default=RoleEnum.STUDENT)
+    
+    enrollments = relationship("Enrollment", back_populates="user")
+    certificates = relationship("Certificate", back_populates="user")
+    progress = relationship("LessonProgress", back_populates="user", cascade="all, delete-orphan")
+
+========================================
+Файл: C:\Бэк_купсач\course_v1\app\routes\admin_route.py
+========================================
+
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, Request, Form
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session
+from app.database import get_db
+from app.models.user import RoleEnum, User
+from app.routes.course_route import get_current_user
+from app.services.course_service import find_course_by_id, add_course, delete_course, course_exists, get_all_courses, update_course
+from app.services.user_service import create_user, find_all_users, find_user_by_id, save_user, delete_user, find_teachers
+from app.schemas.course import CourseCreate
+from app.schemas.user import UserCreate, UserRead
+import logging
+
+router = APIRouter(tags=["Admin"])
+templates = Jinja2Templates(directory="templates")
+logger = logging.getLogger("admin")
+
+
+async def verify_admin_access(request: Request, db: Session):
+    """Вспомогательная функция для проверки прав администратора"""
+    user = await get_current_user(request, db)
+    if not user or user.role != RoleEnum.ADMIN:
+        raise HTTPException(status_code=403, detail="Доступ запрещен")
+    return user
+
+
+# ✅ Панель администратора
+@router.get("/admin/dashboard", response_class=HTMLResponse)
+async def admin_dashboard(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    try:
+        # Проверка аутентификации и прав доступа
+        user = await get_current_user(request, db)
+        if not user or user.role != RoleEnum.ADMIN:
+            return RedirectResponse("/login", status_code=302)
+        
+        return templates.TemplateResponse(
+            "admin_dashboard.html",
+            {"request": request}
+        )
+        
+    except Exception as e:
+        logger.error(f"Error in admin_dashboard: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+# ✅ Форма добавления/редактирования пользователя
+@router.get("/admin/create-or-edit-user", response_class=HTMLResponse)
+async def show_user_form(
+    request: Request,
+    id: int = None,
+    db: Session = Depends(get_db)
+):
+    try:
+        # Проверка прав администратора
+        current_user = await get_current_user(request, db)
+        if not current_user or current_user.role != RoleEnum.ADMIN:
+            return RedirectResponse("/login", status_code=302)
+        
+        # Получаем пользователя или создаем пустой объект
+        user = find_user_by_id(db, id) if id else UserCreate(
+            name="", surname="", email="", phone="", password="", role="STUDENT"
+        )
+        
+        return templates.TemplateResponse(
+            "admin_user_form.html",
+            {
+                "request": request,
+                "user": user
+            }
+        )
+    except Exception as e:
+        print(f"Error in show_user_form: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+@router.post("/admin/create-or-edit-user", response_class=HTMLResponse)
+async def process_user_form(
+    request: Request,
+    db: Session = Depends(get_db),
+    id: str = Form(None),  # Change to str first
+    name: str = Form(...),
+    surname: str = Form(...),
+    email: str = Form(...),
+    phone: str = Form(...),
+    password: str = Form(...),
+    role: str = Form(...)
+):
+    try:
+        # Convert id to int if it exists and is not empty
+        user_id = int(id) if id and id.strip() else None
+        
+        user_data = UserCreate(
+            name=name,
+            surname=surname,
+            email=email,
+            phone=phone,
+            password=password,
+            role=role
+        )
+        
+        if user_id:
+            save_user(db, user_id, user_data)
+        else:
+            create_user(db, user_data)
+            
+        return RedirectResponse("/admin/users", status_code=303)
+        
+    except Exception as e:
+        print(f"Error in process_user_form: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+# ✅ Список пользователей
+@router.get("/admin/users", response_class=HTMLResponse)
+async def list_users(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    try:
+        # Проверка прав администратора
+        user = await get_current_user(request, db)
+        if not user or user.role != RoleEnum.ADMIN:
+            return RedirectResponse("/login", status_code=302)
+        
+        users = find_all_users(db)
+        return templates.TemplateResponse(
+            "admin_user_list.html",
+            {
+                "request": request,
+                "users": users
+            }
+        )
+    except Exception as e:
+        print(f"Error in list_users: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+@router.post("/admin/delete-user", response_class=HTMLResponse)
+async def delete_user_form(
+    id: int = Form(...),
+    db: Session = Depends(get_db)
+):
+    try:
+        delete_user(db, id)
+        return RedirectResponse("/admin/users", status_code=303)
+    except Exception as e:
+        print(f"Error deleting user: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error deleting user")
+
+# ✅ Список курсов
+@router.get("/admin/courses-admin", response_class=HTMLResponse)
+async def list_courses_admin(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    try:
+        # Проверка прав администратора
+        user = await get_current_user(request, db)
+        if not user or user.role != RoleEnum.ADMIN:
+            return RedirectResponse("/login", status_code=302)
+        
+        courses = get_all_courses(db)
+        return templates.TemplateResponse(
+            "admin_course_list.html",
+            {
+                "request": request,
+                "courses": courses
+            }
+        )
+    except Exception as e:
+        print(f"Error in list_courses_admin: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+@router.post("/admin/delete-course", response_class=HTMLResponse)
+async def delete_course_form(
+    id: int = Form(...),
+    db: Session = Depends(get_db)
+):
+    try:
+        delete_course(db, id)
+        return RedirectResponse("/admin/courses-admin", status_code=303)
+    except Exception as e:
+        print(f"Error deleting course: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error deleting course")
+
+# ✅ Форма добавления/редактирования курса
+@router.get("/admin/course-form", response_class=HTMLResponse)  # Исправленный путь
+async def show_course_form(
+    request: Request,
+    id: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    try:
+        await verify_admin_access(request, db)
+        course = find_course_by_id(db, id) if id else CourseCreate(
+            title="", description="", duration=0, price=0.0, 
+            category="", status="ACTIVE", image="", instructor_id=None
+        )
+        instructors = find_teachers(db)
+        return templates.TemplateResponse(
+            "admin_course_form.html",  # Убедитесь, что шаблон имеет это имя
+            {"request": request, "course": course, "instructors": instructors}
+        )
+    except HTTPException:
+        return RedirectResponse("/login", status_code=302)
+    except Exception as e:
+        logger.error(f"Error in show_course_form: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500)
+
+
+@router.post("/admin/save-course", response_class=HTMLResponse)
+async def save_course_form(
+    request: Request,
+    db: Session = Depends(get_db),
+    id: str = Form(None),
+    title: str = Form(...),
+    description: str = Form(...),
+    duration: int = Form(...),
+    price: float = Form(...),
+    category: str = Form(...),
+    status: str = Form(...),
+    image: str = Form(...),
+    instructor_id: Optional[int] = Form(None),
+):
+    try:
+        await verify_admin_access(request, db)
+        
+        # Преобразуем id в int, если он есть
+        course_id = int(id) if id and id.strip() else None
+        
+        # Проверяем преподавателя, если он указан
+        instructor = None
+        if instructor_id:
+            instructor = db.query(User).get(instructor_id)
+            if not instructor or instructor.role != RoleEnum.TEACHER:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Указанный пользователь не является преподавателем"
+                )
+
+        course_data = CourseCreate(
+            title=title,
+            description=description,
+            duration=duration,
+            price=price,
+            category=category,
+            status=status,
+            image=image,
+            instructor_id=instructor_id
+        )
+
+        if course_id and course_exists(db, course_id):
+            logger.info(f"Обновление курса с ID: {course_id}")
+            update_course(db, course_id, course_data)
+        else:
+            logger.info(f"Создание нового курса: {title}")
+            add_course(db, course_data)
+
+        return RedirectResponse("/admin/courses-admin", status_code=303)
+        
+    except HTTPException as he:
+        raise he
+    except ValueError as ve:
+        logger.error(f"Validation error: {str(ve)}")
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        logger.error(f"Error in save_course_form: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+========================================
+Файл: C:\Бэк_купсач\course_v1\app\routes\block_route.py
+========================================
+
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+from app.database import get_db
+from app.schemas.block import BlockCreate, BlockRead
+from app.services import block_service
+from app.auth.role_checker import RoleChecker
+from app.auth.auth_bearer import JWTBearer
+from fastapi import HTTPException
+
+router = APIRouter(prefix="/blocks", tags=["Blocks"])
+
+@router.post("/", response_model=BlockRead, dependencies=[Depends(RoleChecker(["TEACHER"]))])
+def create_block(block: BlockCreate, db: Session = Depends(get_db), payload: dict = Depends(JWTBearer())):
+    from services import lesson_service, course_service
+    lesson = lesson_service.get_lesson_by_id(db, block.lesson_id)
+    if not lesson:
+        raise HTTPException(status_code=404, detail="Lesson not found")
+    course = course_service.get_course_by_id(db, lesson.course_id)
+    if course.instructor_id != payload["sub"]:
+        raise HTTPException(status_code=403, detail="Not your course")
+    return block_service.create_block(db, block)
+
+
+@router.get("/by_lesson/{lesson_id}", response_model=list[BlockRead])
+def get_blocks(lesson_id: int, db: Session = Depends(get_db)):
+    return block_service.get_blocks_by_lesson(db, lesson_id)
+
+
+========================================
+Файл: C:\Бэк_купсач\course_v1\app\routes\certificate_route.py
+========================================
+
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+from app.database import get_db
+from app.schemas.certificate import CertificateCreate, CertificateRead
+from app.services import certificate_service
+from app.auth.auth_bearer import JWTBearer
+from app.auth.role_checker import RoleChecker
+
+router = APIRouter(
+    prefix="/certificates",
+    tags=["Certificates"],
+    dependencies=[Depends(JWTBearer()), Depends(RoleChecker(["Student"]))]
+)
+
+@router.post("/", response_model=CertificateRead)
+def issue_certificate(cert: CertificateCreate, db: Session = Depends(get_db)):
+    return certificate_service.create_certificate(db, cert)
+
+@router.get("/user/{user_id}", response_model=list[CertificateRead])
+def get_user_certificates(user_id: int, db: Session = Depends(get_db)):
+    return certificate_service.get_certificates_by_user(db, user_id)
+
+
+
+========================================
+Файл: C:\Бэк_купсач\course_v1\app\routes\course_route.py
+========================================
+
+import logging
+from typing import List
+from fastapi import APIRouter, Depends, HTTPException, Request, Form, logger
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session
+from app.database import get_db
+from app.auth.auth_bearer import JWTBearer
+from app.auth.auth_handler import decode_token
+from app.models.course import Course
+from app.services import course_service, enrollment_service, user_service, lesson_service, block_service, lesson_progress_service
+from app.models.block import Block, BlockType
+from app.models.lesson import Lesson
+from app.models.user import RoleEnum, User
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# Создаем обработчик для вывода в консоль
+handler = logging.StreamHandler()
+handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+logger.addHandler(handler)
+
+
+router = APIRouter()
+templates = Jinja2Templates(directory="templates")
+
+# 🔐 Получение текущего пользователя по JWT токену
+async def get_current_user(request: Request, db: Session):
+    access_token = request.cookies.get("access_token")
+    if not access_token:
+        return None
+    
+    try:
+        # Декодируем токен и получаем email
+        email = decode_token(access_token)
+        if not email:
+            return None
+        return user_service.get_user_by_email(db, email)
+    except Exception as e:
+        print(f"Error decoding token: {e}")
+        return None
+
+
+def get_active_courses(db: Session) -> List[Course]:
+    try:
+        # Получаем только курсы со статусом ACTIVE
+        active_courses = db.query(Course).filter(
+            Course.status == "ACTIVE"
+        ).all()
+        
+        return active_courses
+        
+    except Exception as e:
+        # Логируем ошибку, если что-то пошло не так
+        print(f"Error fetching active courses: {str(e)}")
+        raise  # Можно заменить на возврат пустого списка [] в продакшене
+
+
+async def verify_student_access(request: Request, db: Session) -> User:
+    """Верификация студента"""
+    user = await get_current_user(request, db)
+    if not user:
+        raise HTTPException(
+            status_code=302,
+            headers={"Location": "/login"},
+            detail="Authorization required"
+        )
+    if user.role != RoleEnum.STUDENT:
+        raise HTTPException(
+            status_code=302,
+            headers={"Location": "/teacher/courses" if user.role == RoleEnum.TEACHER else "/admin/dashboard"},
+            detail="Access denied"
+        )
+    return user
+
+async def verify_teacher_access(request: Request, db: Session) -> User:
+    """Верификация преподавателя"""
+    user = await get_current_user(request, db)
+    if not user:
+        raise HTTPException(
+            status_code=302,
+            headers={"Location": "/login"},
+            detail="Authorization required"
+        )
+    if user.role != RoleEnum.TEACHER:
+        raise HTTPException(
+            status_code=403,
+            detail="Teacher access required"
+        )
+    return user
+
+
+@router.get("/courses")
+async def show_courses(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    # Получаем пользователя (не обязательно)
+    user = await get_current_user(request, db)
+    
+    # Получаем курсы
+    courses = get_active_courses(db)
+    
+    return templates.TemplateResponse(
+        "courses_student.html",
+        {
+            "request": request,
+            "courses": courses,
+            "current_user": user  # Можно использовать в шаблоне
+        }
+    )
+
+
+# 📌 /course-details/{id}
+@router.get("/course-details/{id}", response_class=HTMLResponse)
+async def get_course_details(
+    id: int, 
+    request: Request, 
+    db: Session = Depends(get_db)
+):
+    user = await get_current_user(request, db)
+    course = course_service.find_course_by_id(db, id)
+    
+    enrollment = None
+    if user:
+        enrollment = enrollment_service.find_enrollment(db, user.id, id)
+    
+    return templates.TemplateResponse("course-details.html", {
+        "request": request,
+        "course": course,
+        "user": user,
+        "enrollment": enrollment
+    })
+
+# 📌 /myaccount/courses/{course_id}/lessons
+@router.get("/myaccount/courses/{course_id}/lessons", response_class=HTMLResponse)
+async def view_course_lessons(
+    course_id: int,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    try:
+        # Получаем текущего пользователя
+        user = await get_current_user(request, db)
+        if not user:
+            return RedirectResponse("/login", status_code=302)
+        
+        # Получаем курс
+        course = course_service.find_course_by_id(db, course_id)
+        if not course:
+            raise HTTPException(status_code=404, detail="Курс не найден")
+        
+        # Проверяем, записан ли пользователь на курс
+        print(user.id)
+        enrollment = enrollment_service.find_enrollments_by_student(db, user)
+        if not enrollment:
+            return RedirectResponse("/myaccount", status_code=302)
+        
+        # Получаем уроки курса
+        lessons = lesson_service.find_lessons_by_course(db, course.id)
+        
+        # Получаем прогресс по урокам
+        progress_map = {
+            lesson.id: lesson_progress_service.has_completed_lesson(db, user, lesson)
+            for lesson in lessons
+        }
+        
+        return templates.TemplateResponse(
+            "course_lessons.html",
+            {
+                "request": request,
+                "course": course,
+                "lessons": lessons,
+                "lessonProgressMap": progress_map
+            }
+        )
+        
+    except Exception as e:
+        print(f"Error in view_course_lessons: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+# 📌 /teacher/courses
+@router.get("/teacher/courses", response_class=HTMLResponse)
+async def view_teacher_courses(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    try:
+        # Получаем текущего пользователя
+        user = await get_current_user(request, db)
+        if not user:
+            return RedirectResponse("/login", status_code=302)
+        
+        # Проверяем, что пользователь - преподаватель
+        if user.role != RoleEnum.TEACHER:
+            return RedirectResponse("/courses", status_code=302)
+        
+        # Получаем курсы преподавателя
+        courses = course_service.find_by_instructor(db, user.id)
+        
+        return templates.TemplateResponse(
+            "teacher_courses.html",
+            {
+                "request": request,
+                "courses": courses
+            }
+        )
+        
+    except Exception as e:
+        print(f"Error in view_teacher_courses: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+# 📌 /teacher/courses/{course_id}/lessons
+@router.get("/teacher/courses/{course_id}/lessons", response_class=HTMLResponse)
+async def view_course_lessons(
+    request: Request,
+    course_id: int,
+    db: Session = Depends(get_db)
+):
+    try:
+        # Проверка аутентификации и прав доступа
+        user = await get_current_user(request, db)
+        if not user or user.role != RoleEnum.TEACHER:
+            return RedirectResponse("/login", status_code=302)
+        
+        # Получаем курс и уроки из базы данных
+        course = course_service.find_course_by_id(db, course_id)
+        lessons = lesson_service.find_lessons_by_course(db, course_id)
+        
+        return templates.TemplateResponse(
+            "teacher_course_lessons.html",
+            {
+                "request": request,
+                "course": course,
+                "lessons": lessons
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"Error in view_course_lessons: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+# 📌 /teacher/courses/{course_id}/lessons/new
+@router.get("/teacher/courses/{course_id}/lessons/new", response_class=HTMLResponse)
+async def show_create_lesson_form(
+    request: Request,
+    course_id: int,
+    db: Session = Depends(get_db)
+):
+    try:
+        logger.info(f"Attempting to show create lesson form for course {course_id}")
+        
+        # Получаем текущего пользователя
+        user = await get_current_user(request, db)
+        if not user:
+            logger.warning("Unauthorized access attempt - no user")
+            return RedirectResponse("/login", status_code=302)
+        
+        if user.role != RoleEnum.TEACHER:
+            logger.warning(f"Access denied for user {user.id} - not a teacher")
+            return RedirectResponse("/courses", status_code=302)
+        
+        # Получаем курс
+        course = course_service.find_course_by_id(db, course_id)
+        if not course:
+            logger.error(f"Course not found: {course_id}")
+            raise HTTPException(status_code=404, detail="Курс не найден")
+        
+        if course.instructor_id != user.id:
+            logger.warning(f"Access denied - course {course_id} doesn't belong to teacher {user.id}")
+            raise HTTPException(status_code=403, detail="Доступ запрещен: Курс не принадлежит этому учителю")
+        
+        # Создаем структуру для нового урока
+        lesson = {
+            "id": None,
+            "title": "",
+            "course_id": course_id,
+            "blocks": [{
+                "id": None,
+                "title": "",
+                "type": "TEXT",
+                "content": ""
+            }]
+        }
+        
+        logger.info(f"Rendering form for new lesson in course {course_id}")
+        return templates.TemplateResponse(
+            "teacher-create-lesson.html",
+            {
+                "request": request,
+                "course": course,
+                "lesson": lesson
+            }
+        )
+        
+    except HTTPException as he:
+        logger.error(f"HTTPException in show_create_lesson_form: {he.detail}")
+        raise he
+    except Exception as e:
+        logger.error(f"Unexpected error in show_create_lesson_form: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+# ✅ Показать форму редактирования урока
+@router.get("/teacher/courses/{course_id}/lessons/{lesson_id}/edit", response_class=HTMLResponse)
+async def show_edit_lesson_form(
+    request: Request,
+    course_id: int,
+    lesson_id: int,
+    db: Session = Depends(get_db)
+):
+    try:
+        user = await get_current_user(request, db)
+        if not user or user.role != RoleEnum.TEACHER:
+            return RedirectResponse("/login", status_code=302)
+        
+        course = course_service.find_course_by_id(db, course_id)
+        lesson = lesson_service.find_by_id(db, lesson_id)
+        
+        if not course or not lesson:
+            raise HTTPException(status_code=404, detail="Курс или урок не найден")
+        if course.instructor_id != user.id or lesson.course_id != course_id:
+            raise HTTPException(status_code=403, detail="Доступ запрещен")
+        
+        return templates.TemplateResponse(
+            "teacher-create-lesson.html",
+            {
+                "request": request,
+                "course": course,
+                "lesson": lesson
+            }
+        )
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        logger.error(f"Error in show_edit_lesson_form: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+# ✅ Удалить урок
+@router.post("/teacher/courses/{course_id}/lessons/{lesson_id}/delete", response_class=HTMLResponse)
+async def delete_lesson_form(
+    request: Request,
+    course_id: int,
+    lesson_id: int,
+    db: Session = Depends(get_db)
+):
+    try:
+        user = await get_current_user(request, db)
+        if not user or user.role != RoleEnum.TEACHER:
+            return RedirectResponse("/login", status_code=302)
+        
+        course = course_service.find_course_by_id(db, course_id)
+        lesson = lesson_service.find_by_id(db, lesson_id)
+        
+        if not course or not lesson:
+            raise HTTPException(status_code=404, detail="Курс или урок не найден")
+        if course.instructor_id != user.id or lesson.course_id != course_id:
+            raise HTTPException(status_code=403, detail="Доступ запрещен")
+        
+        lesson_service.delete_lesson_by_id(db, lesson_id)
+        return RedirectResponse(f"/teacher/courses/{course_id}/lessons", status_code=303)
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        logger.error(f"Error deleting lesson: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error deleting lesson")
+
+# ✅ Обновить урок
+@router.post("/teacher/courses/{course_id}/lessons/{lesson_id}", response_class=HTMLResponse)
+async def update_lesson_form(
+    request: Request,
+    course_id: int,
+    lesson_id: int,
+    db: Session = Depends(get_db),
+    title: str = Form(...),
+    blockTitle: List[str] = Form(...),
+    blockType: List[str] = Form(...),
+    blockContent: List[str] = Form(...)
+):
+    try:
+        user = await get_current_user(request, db)
+        if not user or user.role != RoleEnum.TEACHER:
+            return RedirectResponse("/login", status_code=302)
+        
+        course = course_service.find_course_by_id(db, course_id)
+        lesson = lesson_service.find_by_id(db, lesson_id)
+        
+        if not course or not lesson:
+            raise HTTPException(status_code=404, detail="Курс или урок не найден")
+        if course.instructor_id != user.id or lesson.course_id != course_id:
+            raise HTTPException(status_code=403, detail="Доступ запрещен")
+        
+        # Подготавливаем данные для сохранения
+        lesson_data = {
+            "title": title,
+            "course_id": course_id,
+            "blocks": []
+        }
+        
+        # Собираем блоки
+        for i in range(len(blockType)):
+            lesson_data["blocks"].append({
+                "title": blockTitle[i] if i < len(blockTitle) else "",
+                "type": blockType[i],
+                "content": blockContent[i] if i < len(blockContent) else ""
+            })
+        
+        # Сохраняем урок
+        lesson_service.save_lesson(db, lesson_data, lesson_id)
+        return RedirectResponse(f"/teacher/courses/{course_id}/lessons", status_code=303)
+        
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        logger.error(f"Error updating lesson: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error updating lesson")
+    
+
+# ✅ Создать новый урок
+@router.post("/teacher/courses/{course_id}/lessons", response_class=HTMLResponse)
+async def create_lesson_form(
+    request: Request,
+    course_id: int,
+    db: Session = Depends(get_db),
+    title: str = Form(...),
+    blockTitle: List[str] = Form(...),
+    blockType: List[str] = Form(...),
+    blockContent: List[str] = Form(...)
+):
+    try:
+        user = await get_current_user(request, db)
+        if not user or user.role != RoleEnum.TEACHER:
+            return RedirectResponse("/login", status_code=302)
+        
+        course = course_service.find_course_by_id(db, course_id)
+        if not course:
+            raise HTTPException(status_code=404, detail="Курс не найден")
+        if course.instructor_id != user.id:
+            raise HTTPException(status_code=403, detail="Доступ запрещен: Курс не принадлежит этому учителю")
+        
+        # Подготавливаем данные для сохранения
+        lesson_data = {
+            "title": title,
+            "course_id": course_id,
+            "blocks": []
+        }
+        
+        # Собираем блоки
+        for i in range(len(blockType)):
+            lesson_data["blocks"].append({
+                "title": blockTitle[i] if i < len(blockTitle) else "",
+                "type": blockType[i],
+                "content": blockContent[i] if i < len(blockContent) else ""
+            })
+        
+        # Создаем новый урок
+        lesson_service.save_lesson(db, lesson_data)
+        return RedirectResponse(f"/teacher/courses/{course_id}/lessons", status_code=303)
+        
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        logger.error(f"Error creating lesson: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error creating lesson")
+
+# ✅ Удалить блок урока
+@router.post("/teacher/courses/{course_id}/lessons/{lesson_id}/blocks/{block_id}/delete", response_class=HTMLResponse)
+async def delete_block_form(
+    request: Request,
+    course_id: int,
+    lesson_id: int,
+    block_id: int,
+    db: Session = Depends(get_db)
+):
+    try:
+        user = await get_current_user(request, db)
+        if not user or user.role != RoleEnum.TEACHER:
+            return RedirectResponse("/login", status_code=302)
+        
+        course = course_service.find_course_by_id(db, course_id)
+        lesson = lesson_service.find_by_id(db, lesson_id)
+        
+        if not course or not lesson:
+            raise HTTPException(status_code=404, detail="Курс или урок не найден")
+        if course.instructor_id != user.id or lesson.course_id != course_id:
+            raise HTTPException(status_code=403, detail="Доступ запрещен")
+        
+        block_service.delete_block(db, block_id)
+        return RedirectResponse(f"/teacher/courses/{course_id}/lessons/{lesson_id}/edit", status_code=303)
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        logger.error(f"Error deleting block: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error deleting block")
+
+@router.post("/myaccount/courses/{course_id}/lessons/{lesson_id}/complete")
+async def mark_lesson_complete(
+    course_id: int,
+    lesson_id: int,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    try:
+        user = await get_current_user(request, db)
+        if not user:
+            return RedirectResponse("/login", status_code=302)
+            
+        lesson = lesson_service.find_by_id(db, lesson_id)
+        if not lesson or lesson.course_id != course_id:
+            raise HTTPException(status_code=404, detail="Урок не найден")
+        
+        # Отмечаем урок как пройденный
+        lesson_progress_service.mark_completed(db, user, lesson)
+        
+        return RedirectResponse(
+            f"/myaccount/courses/{course_id}/lessons",
+            status_code=302
+        )
+        
+    except Exception as e:
+        print(f"Error in mark_lesson_complete: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+    
+@router.get("/myaccount/courses/{course_id}/lessons/{lesson_id}", response_class=HTMLResponse)
+async def view_lesson(
+    request: Request,
+    course_id: int,
+    lesson_id: int,
+    db: Session = Depends(get_db)
+):
+    try:
+        # Получаем текущего пользователя
+        user = await get_current_user(request, db)
+        if not user:
+            return RedirectResponse("/login", status_code=302)
+        
+        # Получаем курс по его ID
+        course = course_service.find_course_by_id(db, course_id)
+        if not course:
+            raise HTTPException(status_code=404, detail="Курс не найден")
+        
+        # Проверяем, записан ли пользователь на курс
+        enrollment = enrollment_service.find_enrollment(db, user.id, course_id)
+        if not enrollment:
+            return RedirectResponse("/myaccount", status_code=302)
+        
+        # Получаем урок
+        lesson = lesson_service.find_by_id(db, lesson_id)
+        if not lesson or lesson.course_id != course_id:
+            raise HTTPException(status_code=404, detail="Урок не найден")
+        
+        # Проверяем, завершён ли урок
+        is_completed = lesson_progress_service.has_completed_lesson(db, user, lesson)
+        
+        # Рендерим шаблон с необходимыми данными
+        return templates.TemplateResponse(
+            "lesson_details.html",  # Убедитесь, что это правильное имя вашего шаблона
+            {
+                "request": request,
+                "course": course,       # Передаём объект курса
+                "lesson": lesson,      # Передаём объект урока
+                "is_completed": is_completed  # Передаём статус завершения
+            }
+        )
+        
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        logger.error(f"Ошибка в view_lesson: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Внутренняя ошибка сервера")
+
+========================================
+Файл: C:\Бэк_купсач\course_v1\app\routes\enrollment_route.py
+========================================
+
+from fastapi import APIRouter, Depends, Request, Form
+from fastapi.responses import RedirectResponse
+from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session
+from fastapi.responses import Response
+from app.database import get_db
+from app.auth.auth_bearer import JWTBearer
+from app.routes.course_route import get_current_user
+from app.services import enrollment_service, course_service, user_service
+from app.services.certificate_service import generate_certificate_pdf
+from starlette.responses import StreamingResponse
+import io
+
+
+router = APIRouter(tags=["Enrollment"])
+
+templates = Jinja2Templates(directory="templates")
+
+
+@router.get("/myaccount", dependencies=[Depends(JWTBearer())])
+def show_my_account(request: Request, db: Session = Depends(get_db)):
+    user = user_service.get_current_user(request, db)
+    enrollments = enrollment_service.get_enrollments_by_user(db, user)
+
+    for enrollment in enrollments:
+        progress = enrollment_service.calculate_completion(db, user, enrollment.course)
+        enrollment.progress = round(progress)
+
+    return templates.TemplateResponse("myaccount.html", {
+        "request": request,
+        "user": user,
+        "enrollments": enrollments
+    })
+
+@router.post("/enroll/{course_id}")
+async def enroll_in_course(course_id: int, request: Request, db: Session = Depends(get_db)):
+    user = await get_current_user(request, db)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+
+    course = course_service.find_course_by_id(db, course_id)
+    if not course:
+        return RedirectResponse("/courses", status_code=404)
+
+    #                   ,                                                                       
+    existing_enrollment = enrollment_service.find_enrollment(db, user.id, course_id)
+    if existing_enrollment:
+        #                                                -                                                                             
+        return RedirectResponse("/myaccount", status_code=303)
+
+    #                              -                                       
+    enrollment_service.enroll_user_in_course(db, user.id, course_id)
+
+    return RedirectResponse("/myaccount", status_code=303)
+
+
+# @router.get("/certificate/{course_id}/{user_id}")
+# def issue_certificate(course_id: int, user_id: int, db: Session = Depends(get_db)):
+#     user = user_service.find_user_by_id(db, user_id)
+#     course = course_service.find_course_by_id(db, course_id)
+
+#     cert = enrollment_service.find_enrollment(db, user, course)
+
+#     pdf_bytes = generate_certificate_pdf(course, user)
+#     return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf", headers={
+#         "Content-Disposition": "attachment; filename=certificate.pdf"
+#     })
+
+
+@router.get("/certificate/{course_id}/{user_id}")
+def issue_certificate(course_id: int, user_id: int, db: Session = Depends(get_db)):
+    user = user_service.find_user_by_id(db, user_id)
+    course = course_service.find_course_by_id(db, course_id)
+
+    #                  user.id    course.id                              
+    enrollment = enrollment_service.find_enrollment(db, user.id, course.id)
+
+    if not enrollment:
+        return Response("                                                                     ", status_code=404)
+
+    pdf_bytes = generate_certificate_pdf(course, user)
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=certificate.pdf"}
+    )
+
+
+
+========================================
+Файл: C:\Бэк_купсач\course_v1\app\routes\lesson_progress_route.py
+========================================
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from app.database import get_db
+from app.schemas.lesson_progress import LessonProgressCreate, LessonProgressRead
+from app.services import lesson_progress_service
+from app.auth.auth_bearer import JWTBearer
+from app.auth.role_checker import RoleChecker
+
+router = APIRouter(
+    prefix="/progress",
+    tags=["Progress"],
+    dependencies=[Depends(JWTBearer()), Depends(RoleChecker(["Student"]))],
+)
+
+@router.post("/", response_model=LessonProgressRead)
+def add_progress(progress: LessonProgressCreate, db: Session = Depends(get_db)):
+    return lesson_progress_service.create_progress(db, progress)
+
+@router.post("/complete", response_model=LessonProgressRead, dependencies=[Depends(RoleChecker(["Student"]))])
+def complete_lesson(
+    user_id: int,
+    lesson_id: int,
+    db: Session = Depends(get_db),
+    payload: dict = Depends(JWTBearer())
+):
+    # üîç –ü—Ä–æ–≤–µ—Ä–∫–∞, —á—Ç–æ –ø–æ–ª—å–∑–æ–≤–∞—Ç–µ–ª—å ‚Äî —Å–∞–º —Å–µ–±—è
+    if payload["sub"] != user_id:
+        raise HTTPException(status_code=403, detail="You can only mark your own progress")
+
+    # üîç –ü—Ä–æ–≤–µ—Ä–∫–∞, —á—Ç–æ —É—Ä–æ–∫ —Å—É—â–µ—Å—Ç–≤—É–µ—Ç
+    from services.lesson_service import get_lesson_by_id
+    lesson = get_lesson_by_id(db, lesson_id)
+    if not lesson:
+        raise HTTPException(status_code=404, detail="Lesson not found")
+
+    # üîç –ü—Ä–æ–≤–µ—Ä–∫–∞, —á—Ç–æ —Å—Ç—É–¥–µ–Ω—Ç –∑–∞–ø–∏—Å–∞–Ω –Ω–∞ —ç—Ç–æ—Ç –∫—É—Ä—Å
+    from services.enrollment_service import get_enrollments_by_user
+    user_enrollments = get_enrollments_by_user(db, user_id)
+    course_ids = [e.course_id for e in user_enrollments]
+
+    if lesson.course_id not in course_ids:
+        raise HTTPException(status_code=403, detail="You are not enrolled in this course")
+
+    # ‚úÖ –û—Ç–º–µ—á–∞–µ–º —É—Ä–æ–∫ –∑–∞–≤–µ—Ä—à—ë–Ω–Ω—ã–º
+    from services.lesson_progress_service import mark_lesson_completed
+    progress = mark_lesson_completed(db, user_id, lesson_id)
+
+    # üîÅ –ü—Ä–æ–≤–µ—Ä–∫–∞ ‚Äî –≤—Å–µ –ª–∏ —É—Ä–æ–∫–∏ –∑–∞–≤–µ—Ä—à–µ–Ω—ã?
+    from services.lesson_service import get_lessons_by_course
+    lessons = get_lessons_by_course(db, lesson.course_id)
+    lesson_ids = {l.id for l in lessons}
+
+    from services.lesson_progress_service import get_progress
+    completed = {
+        p.lesson_id for p in get_progress(db, user_id) if p.is_completed
+    }
+
+    if lesson_ids == completed:
+        # üéâ –í—ã–¥–∞—Ç—å —Å–µ—Ä—Ç–∏—Ñ–∏–∫–∞—Ç
+        from services.certificate_service import create_certificate
+        from schemas.certificate import CertificateCreate
+        create_certificate(db, CertificateCreate(user_id=user_id, course_id=lesson.course_id))
+
+    return progress
+
+
+@router.get("/user/{user_id}", response_model=list[LessonProgressRead])
+def get_user_progress(user_id: int, db: Session = Depends(get_db)):
+    return lesson_progress_service.get_progress(db, user_id)
+
+
+========================================
+Файл: C:\Бэк_купсач\course_v1\app\routes\lesson_route.py
+========================================
+
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+from app.database import get_db
+from app.auth.role_checker import RoleChecker
+from app.services import course_service
+from fastapi import HTTPException
+from app.auth.auth_bearer import JWTBearer
+from app.schemas.lesson import LessonCreate, LessonRead
+from app.services import lesson_service
+
+router = APIRouter(prefix="/lessons", tags=["Lessons"])
+
+@router.post("/", response_model=LessonRead, dependencies=[Depends(RoleChecker(["Teacher"]))])
+def create_lesson(lesson: LessonCreate, db: Session = Depends(get_db), payload: dict = Depends(JWTBearer())):
+    course = course_service.get_course_by_id(db, lesson.course_id)
+    if course.instructor_id != payload["sub"]:
+        raise HTTPException(status_code=403, detail="You can only add lessons to your own courses")
+    return lesson_service.create_lesson(db, lesson)
+
+@router.get("/by_course/{course_id}", response_model=list[LessonRead])
+def get_lessons(course_id: int, db: Session = Depends(get_db)):
+    return lesson_service.get_lessons_by_course(db, course_id)
+
+
+
+========================================
+Файл: C:\Бэк_купсач\course_v1\app\routes\user_route.py
+========================================
+
+from fastapi import APIRouter, Cookie, Request, Form, Depends, Response
+from fastapi.responses import HTMLResponse, RedirectResponse
+from starlette.status import HTTP_302_FOUND
+from fastapi.templating import Jinja2Templates
+
+from sqlalchemy.orm import Session
+from app.auth.auth_handler import create_access_token, decode_token, verify_password
+from app.database import get_db
+from app.schemas.user import UserCreate
+from app.services import enrollment_service, user_service
+from app.models.user import RoleEnum, User
+
+router = APIRouter()
+templates = Jinja2Templates(directory="templates")
+
+
+@router.get("/login")
+def get_registration_form(request: Request):
+    return templates.TemplateResponse("form.html", {"request": request, "userReg": {}})
+
+
+
+@router.post("/reg")
+def register_user(
+    request: Request,
+    name: str = Form(...),
+    surname: str = Form(...),
+    email: str = Form(...),
+    phone: str = Form(...),
+    password: str = Form(...),
+    confirmPassword: str = Form(...),
+    db=Depends(get_db)
+):
+    if password != confirmPassword:
+        return templates.TemplateResponse("form.html", {
+            "request": request,
+            "userReg": {
+                "name": name,
+                "surname": surname,
+                "email": email,
+                "phone": phone
+            },
+            "error": "                                    "
+        })
+
+    user_data = UserCreate(
+        name=name,
+        surname=surname,
+        email=email,
+        phone=phone,
+        password=password,
+        role="STUDENT"
+    )
+    try:
+        user_service.create_user(db, user_data)
+    except Exception as e:
+        return templates.TemplateResponse("form.html", {
+            "request": request,
+            "userReg": user_data.dict(),
+            "error": str(e)
+        })
+
+    return RedirectResponse("/login", status_code=HTTP_302_FOUND)
+
+
+@router.post("/login")
+def login(
+    request: Request,
+    email: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    user = user_service.get_user_by_email(db, email)
+    if user and verify_password(password, user.password):
+        access_token = create_access_token({"sub": user.email}, user.role)
+        
+        #                      URL                                                                              
+        if user.role == RoleEnum.ADMIN:
+            redirect_url = "/admin/dashboard"
+        elif user.role == RoleEnum.TEACHER:
+            redirect_url = "/teacher/courses"
+        else:  # STUDENT                             
+            redirect_url = "/myaccount"
+            
+        response = RedirectResponse(url=redirect_url, status_code=HTTP_302_FOUND)
+        response.set_cookie(
+            key="access_token",
+            value=f"Bearer {access_token}",
+            httponly=True,
+            secure=True,
+            samesite='lax'
+        )
+        return response
+        
+    return templates.TemplateResponse("form.html", {
+        "request": request,
+        "error": "                 email                    "
+    })
+
+
+@router.get("/myaccount", response_class=HTMLResponse)
+def show_my_account(
+    request: Request,
+    db: Session = Depends(get_db),
+    access_token: str = Cookie(default=None),
+):
+    print("Access token:", access_token)  #                                  
+    
+    if not access_token:
+        print("No token found")
+        return RedirectResponse("/login", status_code=HTTP_302_FOUND)
+
+    email = decode_token(access_token)
+    print("Decoded email:", email)  #                                  
+    
+    if not email:
+        print("Invalid or expired token")
+        return RedirectResponse("/login", status_code=HTTP_302_FOUND)
+
+    user = user_service.get_user_by_email(db, email)
+    print(f"Retrieved user type: {type(user)}")  #                                     
+    if not user:
+        print("User not found")
+        return RedirectResponse("/login", status_code=HTTP_302_FOUND)
+
+    enrollments = enrollment_service.find_enrollments_by_student(db, user)
+    for enrollment in enrollments:
+        completion = enrollment_service.calculate_course_completion(db, user, enrollment.course)
+        enrollment.progress = round(completion)
+
+    return templates.TemplateResponse("myaccount.html", {
+        "request": request,
+        "user": user,
+        "enrollments": enrollments
+    })
+
+@router.get("/logout")
+async def logout_user(response: Response):
+    redirect_response = RedirectResponse(url="/login", status_code=HTTP_302_FOUND)
+    
+    #                            access_token
+    redirect_response.delete_cookie(
+        key="access_token",
+        httponly=True,
+        secure=True,  #        HTTPS
+        samesite="lax"
+    )
+    
+    return redirect_response
+
+
+
+
+========================================
+Файл: C:\Бэк_купсач\course_v1\app\schemas\block.py
+========================================
+
+from pydantic import BaseModel
+from enum import Enum
+
+
+class BlockType(str, Enum):
+    TEXT = "TEXT"
+    IMAGE = "IMAGE"
+    VIDEO = "VIDEO"
+
+class BlockBase(BaseModel):
+    title: str
+    content: str
+    type: BlockType
+    lesson_id: int
+
+class BlockCreate(BlockBase):
+    pass
+
+class BlockRead(BlockBase):
+    id: int
+
+    model_config = {
+        "from_attributes": True
+    }
+
+
+========================================
+Файл: C:\Бэк_купсач\course_v1\app\schemas\certificate.py
+========================================
+
+from pydantic import BaseModel
+from datetime import datetime
+
+class CertificateBase(BaseModel):
+    user_id: int
+    course_id: int
+
+class CertificateCreate(CertificateBase):
+    pass
+
+class CertificateRead(CertificateBase):
+    id: int
+    issued_at: datetime
+
+    model_config = {
+        "from_attributes": True
+    }
+
+
+========================================
+Файл: C:\Бэк_купсач\course_v1\app\schemas\course.py
+========================================
+
+from pydantic import BaseModel
+from typing import Optional
+from enum import Enum
+
+class StatusEnum(str, Enum):
+    ACTIVE = "ACTIVE"
+    INACTIVE = "INACTIVE"
+    ENROLLED = "ENROLLED"
+    COMPLETE = "COMPLETE"
+
+class CourseBase(BaseModel):
+    title: str
+    description: Optional[str] = None
+    duration: int
+    price: float
+    category: str
+    status: StatusEnum
+    image: Optional[str] = None
+    instructor_id: Optional[int] = None
+
+class CourseCreate(CourseBase):
+    pass
+
+class CourseRead(CourseBase):
+    id: int
+
+    model_config = {
+        "from_attributes": True
+    }
+
+
+========================================
+Файл: C:\Бэк_купсач\course_v1\app\schemas\enrollment.py
+========================================
+
+from pydantic import BaseModel
+from enum import Enum
+
+class EnrollmentStatus(str, Enum):
+    ENROLLED = "ENROLLED"
+    COMPLETED = "COMPLETED"
+
+class EnrollmentBase(BaseModel):
+    user_id: int
+    course_id: int
+    status: EnrollmentStatus = EnrollmentStatus.ENROLLED
+
+class EnrollmentCreate(EnrollmentBase):
+    pass
+
+
+class EnrollmentRead(EnrollmentBase):
+    id: int
+
+    model_config = {
+        "from_attributes": True
+    }
+
+
+
+========================================
+Файл: C:\Бэк_купсач\course_v1\app\schemas\lesson.py
+========================================
+
+from pydantic import BaseModel
+from typing import List, Optional
+from app.schemas.block import BlockRead  # импортируем BlockRead из block.py
+
+class LessonBase(BaseModel):
+    title: str
+    course_id: int
+
+class LessonCreate(LessonBase):
+    pass
+
+class LessonRead(LessonBase):
+    id: int
+    blocks: Optional[List[BlockRead]] = []
+
+    model_config = {
+        "from_attributes": True
+    }
+
+
+========================================
+Файл: C:\Бэк_купсач\course_v1\app\schemas\lesson_progress.py
+========================================
+
+from pydantic import BaseModel
+from typing import Optional
+
+class LessonProgressBase(BaseModel):
+    lesson_id: int
+    user_id: int
+    completed: Optional[bool] = False
+
+class LessonProgressCreate(LessonProgressBase):
+    pass
+
+class LessonProgressRead(LessonProgressBase):
+    id: int
+
+    model_config = {
+        "from_attributes": True
+    }
+
+
+========================================
+Файл: C:\Бэк_купсач\course_v1\app\schemas\user.py
+========================================
+
+from pydantic import BaseModel, EmailStr
+from enum import Enum
+from typing import Optional
+
+class RoleEnum(str, Enum):
+    Student = "STUDENT"
+    Teacher = "TEACHER"
+    Admin = "ADMIN"
+
+class UserBase(BaseModel):
+    name: str
+    surname: str
+    email: EmailStr
+    phone: str
+    role: RoleEnum
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+from app.models.user import RoleEnum
+
+class UserCreate(BaseModel):
+    name: str
+    surname: str
+    email: str
+    phone: str
+    password: str
+    role: RoleEnum = RoleEnum.STUDENT  # Устанавливаем значение по умолчанию # Делаем поле необязательным со значением по умолчанию
+class UserRead(UserBase):
+    id: int
+
+    model_config = {
+    "from_attributes": True
+}
+
+
+========================================
+Файл: C:\Бэк_купсач\course_v1\app\services\block_service.py
+========================================
+
+from sqlalchemy.orm import Session
+from app.models.block import Block
+from typing import List
+
+
+def save_block(db: Session, block: Block) -> Block:
+    db.add(block)
+    db.commit()
+    db.refresh(block)
+    return block
+
+
+def find_blocks_by_lesson(db: Session, lesson_id: int) -> List[Block]:
+    return db.query(Block).filter_by(lesson_id=lesson_id).all()
+
+
+def save_all_blocks(db: Session, blocks: List[Block]) -> List[Block]:
+    db.add_all(blocks)
+    db.commit()
+    return blocks
+
+
+def find_block_by_id(db: Session, block_id: int) -> Block:
+    block = db.query(Block).filter_by(id=block_id).first()
+    if not block:
+        raise RuntimeError(f"Block not found with id: {block_id}")
+    return block
+
+
+def delete_block(db: Session, block_id: int):
+    block = find_block_by_id(db, block_id)
+    db.delete(block)
+    db.commit()
+
+
+def delete_blocks_by_lesson(db: Session, lesson_id: int):
+    blocks = find_blocks_by_lesson(db, lesson_id)
+    for block in blocks:
+        db.delete(block)
+    db.commit()
+
+
+========================================
+Файл: C:\Бэк_купсач\course_v1\app\services\certificate_service.py
+========================================
+
+import os
+from sqlalchemy.orm import Session
+from app.models.certificate import Certificate
+from app.models.course import Course
+from app.models.user import User
+from app.schemas.certificate import CertificateCreate
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from io import BytesIO
+from datetime import datetime
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+
+def generate_certificate_pdf(course, user):
+    
+    # Регистрируем шрифты
+    base_dir = os.path.dirname(os.path.abspath(__file__))  # Получаем текущую директорию
+    fonts_dir = os.path.join(r"C:\Бэк_купсач\course_v1\static\fonts") # Создаем путь к директории шрифтов
+# Регистрируем шрифты
+    pdfmetrics.registerFont(TTFont('DejaVuSans', os.path.join(fonts_dir, 'DejaVuSans.ttf')))
+    pdfmetrics.registerFont(TTFont('DejaVuSans-Bold', os.path.join(fonts_dir, 'DejaVuSans-Bold.ttf')))
+    
+    buffer = BytesIO()
+    p = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+
+    # Фон сертификата (светлый узор)
+    p.setFillColorRGB(0.98, 0.98, 0.98)  # Очень светлый серый
+    p.rect(0, 0, width, height, fill=1, stroke=0)
+    
+    # Декоративная рамка
+    p.setStrokeColorRGB(0.2, 0.4, 0.6)  # Темно-синий цвет
+    p.setLineWidth(3)
+    p.rect(30, 30, width-60, height-60, fill=0, stroke=1)
+    
+    # Улучшенные декоративные элементы в углах (повернутые)
+    p.setLineWidth(1.5)
+    corner_size = 25
+    # Левый верхний
+    p.line(30, height-30-corner_size, 30, height-30)
+    p.line(30, height-30, 30+corner_size, height-30)
+    # Правый верхний
+    p.line(width-30-corner_size, height-30, width-30, height-30)
+    p.line(width-30, height-30, width-30, height-30-corner_size)
+    # Левый нижний
+    p.line(30, 30, 30, 30+corner_size)
+    p.line(30, 30, 30+corner_size, 30)
+    # Правый нижний
+    p.line(width-30-corner_size, 30, width-30, 30)
+    p.line(width-30, 30, width-30, 30+corner_size)
+
+    # Название организации (меньший размер)
+    p.setFillColorRGB(0.2, 0.4, 0.6)
+    p.setFont('DejaVuSans-Bold', 12)  # Уменьшен с 14 до 12
+    p.drawString(50, height-50, "ОБРАЗОВАТЕЛЬНЫЙ КУРС")
+
+    # Заголовок сертификата
+    p.setFillColorRGB(0.8, 0.2, 0.2)  # Красный цвет
+    p.setFont('DejaVuSans-Bold', 32)
+    p.drawCentredString(width/2, height-150, "СЕРТИФИКАТ")
+    
+    # Номер сертификата
+    p.setFillColorRGB(0.4, 0.4, 0.4)
+    p.setFont('DejaVuSans', 10)
+    p.drawRightString(width-50, height-50, f"№ {datetime.now().strftime('%Y%m%d')}-{user.id}")
+
+    # Основной текст
+    p.setFillColorRGB(0, 0, 0)  # Черный цвет
+    p.setFont('DejaVuSans', 16)
+    p.drawCentredString(width/2, height-210, "Настоящим удостоверяется, что")
+    
+    # Имя получателя с подчеркиванием
+    name = f"{user.name} {user.surname}"
+    p.setFillColorRGB(0.1, 0.3, 0.5)  # Темно-синий
+    p.setFont('DejaVuSans-Bold', 22)
+    text_width = p.stringWidth(name, 'DejaVuSans-Bold', 22)
+    p.drawCentredString(width/2, height-250, name)
+    # Подчеркивание
+    p.setStrokeColorRGB(0.1, 0.3, 0.5)
+    p.setLineWidth(1.2)
+    p.line(width/2 - text_width/2 - 5, height-255, width/2 + text_width/2 + 5, height-255)
+
+    # Описание достижения
+    p.setFillColorRGB(0, 0, 0)
+    p.setFont('DejaVuSans', 16)
+    p.drawCentredString(width/2, height-290, "успешно завершил(а) курс обучения")
+    p.setFont('DejaVuSans-Bold', 20)
+    p.setFillColorRGB(0.8, 0.2, 0.2)  # Красный
+    p.drawCentredString(width/2, height-320, f"«{course.title}»")
+
+    # Детали курса
+    p.setFillColorRGB(0.3, 0.3, 0.3)
+    p.setFont('DejaVuSans', 14)
+    p.drawCentredString(width/2, height-370, f"Продолжительность: {course.duration} месяцев")
+    p.drawCentredString(width/2, height-400, f"Дата выдачи: {datetime.now().strftime('%d.%m.%Y')}")
+
+    # Подпись и печать
+    p.setFont('DejaVuSans', 12)
+    p.drawString(100, 120, "Директор образовательного центра:")
+    p.drawString(100, 100, "_________________________")
+    p.drawString(100, 80, "М.П.")  # Место печати
+
+    # Декоративный элемент внизу
+    # p.setStrokeColorRGB(0.2, 0.4, 0.6)
+    # p.setLineWidth(1)
+    # p.line(width/2-100, 60, width/2+100, 60)
+
+    p.showPage()
+    p.save()
+    buffer.seek(0)
+    return buffer.getvalue()
+
+
+def create_certificate(db: Session, cert: CertificateCreate):
+    db_cert = Certificate(**cert.dict())
+    db.add(db_cert)
+    db.commit()
+    db.refresh(db_cert)
+    return db_cert
+
+def get_certificates_by_user(db: Session, user_id: int):
+    return db.query(Certificate).filter(Certificate.user_id == user_id).all()
+
+def find_by_course_and_user(db: Session, course: Course, user: User):
+    return db.query(Certificate).filter(
+        Certificate.course_id == course.id,
+        Certificate.user_id == user.id
+    ).first()
+
+
+========================================
+Файл: C:\Бэк_купсач\course_v1\app\services\course_service.py
+========================================
+
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import NoResultFound
+from typing import List, Optional
+from app.models.course import Course, StatusEnum
+from app.models.user import User, RoleEnum
+from app.schemas.course import CourseCreate
+import logging
+from sqlalchemy.orm import joinedload 
+
+logger = logging.getLogger("course_service")
+
+
+# ✅ Добавить курс
+def add_course(db: Session, course_data: CourseCreate):
+    instructor = None
+    if course_data.instructor_id:
+        instructor = db.query(User).filter(User.id == course_data.instructor_id).first()
+        if not instructor:
+            raise ValueError("Преподаватель не найден")
+        if instructor.role != RoleEnum.TEACHER:
+            raise ValueError("Пользователь не является преподавателем")
+
+    new_course = Course(
+        title=course_data.title,
+        description=course_data.description,
+        price=course_data.price,
+        category=course_data.category,
+        duration=course_data.duration,
+        status=course_data.status,
+        image=course_data.image,
+        instructor_id=course_data.instructor_id
+    )
+    db.add(new_course)
+    db.commit()
+    db.refresh(new_course)
+    return new_course
+
+
+# ✅ Обновить курс
+def update_course(db: Session, course_id: int, updated_data: CourseCreate):
+    course = db.query(Course).filter(Course.id == course_id).first()
+    if not course:
+        raise ValueError("Курс не найден")
+
+    # Обновляем основные поля
+    course.title = updated_data.title
+    course.description = updated_data.description
+    course.price = updated_data.price
+    course.category = updated_data.category
+    course.duration = updated_data.duration
+    course.status = updated_data.status
+    course.image = updated_data.image
+
+    # Обрабатываем преподавателя
+    if updated_data.instructor_id:
+        instructor = db.query(User).filter(
+            User.id == updated_data.instructor_id,
+            User.role == RoleEnum.TEACHER
+        ).first()
+        if not instructor:
+            raise ValueError("Преподаватель не найден или не имеет соответствующей роли")
+        course.instructor_id = instructor.id
+    else:
+        course.instructor_id = None
+
+    db.commit()
+    db.refresh(course)
+    return course
+
+
+# ✅ Проверить, существует ли курс
+def course_exists(db: Session, course_id: int) -> bool:
+    exists = db.query(Course).filter(Course.id == course_id).first() is not None
+    logger.info(f"Проверка существования курса с ID: {course_id}: {exists}")
+    return exists
+
+
+# ✅ Получить все курсы
+def get_all_courses(db: Session) -> List[Course]:
+    courses = db.query(Course).all()
+    
+    # Получаем всех преподавателей одним запросом
+    instructor_ids = {c.instructor_id for c in courses if c.instructor_id}
+    instructors = {i.id: i for i in db.query(User).filter(User.id.in_(instructor_ids)).all()} if instructor_ids else {}
+    
+    # Добавляем преподавателя к каждому курсу
+    for course in courses:
+        if course.instructor_id:
+            course.instructor = instructors.get(course.instructor_id)
+        else:
+            course.instructor = None
+    
+    return courses
+
+
+# ✅ Найти курс по ID
+def find_course_by_id(db: Session, course_id: int) -> Course:
+    course = db.query(Course).filter(Course.id == course_id).first()
+    if not course:
+        raise ValueError("Курс не найден")
+    return course
+
+
+# ✅ Удалить курс
+def delete_course(db: Session, course_id: int):
+    course = db.query(Course).filter(Course.id == course_id).first()
+    if not course:
+        raise ValueError("Курс не найден")
+    db.delete(course)
+    db.commit()
+
+
+# ✅ Найти всех преподавателей
+def find_teachers(db: Session) -> List[User]:
+    return db.query(User).filter(User.role == RoleEnum.TEACHER).all()
+
+
+# ✅ Курсы конкретного преподавателя
+def find_by_instructor(db: Session, instructor_id: int) -> List[Course]:
+    return db.query(Course).filter(Course.instructor_id == instructor_id).all()
+
+
+========================================
+Файл: C:\Бэк_купсач\course_v1\app\services\enrollment_service.py
+========================================
+
+from sqlalchemy.orm import Session
+from datetime import datetime
+from typing import Optional, List
+from app.models import user
+from app.models.enrollment import Enrollment, StatusEnum
+from app.models.user import User
+from app.models.course import Course
+from app.models.lesson import Lesson
+from app.services.lesson_service import find_lessons_by_course
+from app.services.lesson_progress_service import has_completed_lesson
+
+
+# ðŸ”  Ð Ð°Ð¹Ñ‚Ð¸ Ð·Ð°Ð¿Ð¸Ñ ÑŒ Ð¾Ð± ÑƒÑ‡Ð°Ñ Ñ‚Ð¸Ð¸ Ð¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÐµÐ»Ñ  Ð² ÐºÑƒÑ€Ñ Ðµ
+def find_enrollment(db: Session, user_id: int, course_id: int) -> Optional[Enrollment]:
+    return db.query(Enrollment).filter_by(user_id=user_id, course_id=course_id).first()
+
+
+def has_active_enrollment(db: Session, user_id: int, course_id: int) -> bool:
+    enrollment = db.query(Enrollment).filter(
+        Enrollment.user_id == user_id,
+        Enrollment.course_id == course_id,
+        Enrollment.status == StatusEnum.ACTIVE
+    ).first()
+    return enrollment is not None
+
+# âž• Ð—Ð°Ð¿Ð¸Ñ Ð°Ñ‚ÑŒ Ð¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÐµÐ»Ñ  Ð½Ð° ÐºÑƒÑ€Ñ  (Ñ  Ð¿Ñ€Ð¾Ð²ÐµÑ€ÐºÐ¾Ð¹ Ñ ÑƒÑ‰ÐµÑ Ñ‚Ð²ÑƒÑŽÑ‰ÐµÐ¹ Ð¿Ð¾Ð´Ð¿Ð¸Ñ ÐºÐ¸)
+def enroll_user_in_course(db: Session, user_id: int, course_id: int) -> Optional[Enrollment]:
+    # ÐŸÑ€Ð¾Ð²ÐµÑ€Ñ ÐµÐ¼, Ð½Ðµ Ð·Ð°Ð¿Ð¸Ñ Ð°Ð½ Ð»Ð¸ Ð¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÐµÐ»ÑŒ ÑƒÐ¶Ðµ Ð½Ð° Ñ Ñ‚Ð¾Ñ‚ ÐºÑƒÑ€Ñ 
+    existing_enrollment = find_enrollment(db, user_id, course_id)
+    if existing_enrollment:
+        return None  # Ð¸Ð»Ð¸ Ð¼Ð¾Ð¶Ð½Ð¾ Ð²ÐµÑ€Ð½ÑƒÑ‚ÑŒ Ñ ÑƒÑ‰ÐµÑ Ñ‚Ð²ÑƒÑŽÑ‰ÑƒÑŽ Ð·Ð°Ð¿Ð¸Ñ ÑŒ
+    
+    # Ð¡Ð¾Ð·Ð´Ð°ÐµÐ¼ Ð·Ð°Ð¿Ð¸Ñ ÑŒ Ð¾ Ð·Ð°Ñ‡Ð¸Ñ Ð»ÐµÐ½Ð¸Ð¸
+    enrollment = Enrollment(
+        user_id=user_id,
+        course_id=course_id,
+        status=StatusEnum.ENROLLED,
+    )
+
+    # Ð”Ð¾Ð±Ð°Ð²Ð»Ñ ÐµÐ¼ Ð² Ñ ÐµÑ Ñ Ð¸ÑŽ, Ñ Ð¾Ñ…Ñ€Ð°Ð½Ñ ÐµÐ¼ Ð¸ Ð¾Ð±Ð½Ð¾Ð²Ð»Ñ ÐµÐ¼ Ð¾Ð±ÑŠÐµÐºÑ‚
+    db.add(enrollment)
+    db.commit()
+    db.refresh(enrollment)
+
+    return enrollment
+
+
+# ðŸ“‹ ÐŸÐ¾Ð»ÑƒÑ‡Ð¸Ñ‚ÑŒ Ñ Ð¿Ð¸Ñ Ð¾Ðº ÐºÑƒÑ€Ñ Ð¾Ð² Ð¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÐµÐ»Ñ 
+def find_enrollments_by_student(db: Session, user: User):
+    # Ð”Ð¾Ð±Ð°Ð²ÑŒÑ‚Ðµ Ð¾Ñ‚Ð»Ð°Ð´Ð¾Ñ‡Ð½ÑƒÑŽ Ð¿ÐµÑ‡Ð°Ñ‚ÑŒ
+    print(f"User type: {type(user)}")
+    print(f"User attributes: {dir(user)}")
+    
+    if not hasattr(user, 'id'):
+        raise ValueError("User object is missing 'id' attribute")
+    
+    return db.query(Enrollment).filter(Enrollment.user_id == user.id).all()
+
+
+
+3
+# ðŸ“ˆ ÐŸÐ¾Ð´Ñ Ñ‡Ð¸Ñ‚Ð°Ñ‚ÑŒ Ð¿Ñ€Ð¾Ð³Ñ€ÐµÑ Ñ  Ð¿Ð¾ ÑƒÑ€Ð¾ÐºÐ°Ð¼
+def calculate_course_completion(db: Session, user: User, course: Course) -> float:
+    lessons: List[Lesson] = find_lessons_by_course(db, course.id)
+    completed_lessons_count = sum(
+        1 for lesson in lessons if has_completed_lesson(db, user, lesson)
+    )
+    if not lessons:
+        return 0.0
+    return (completed_lessons_count / len(lessons)) * 100
+
+
+
+
+========================================
+Файл: C:\Бэк_купсач\course_v1\app\services\lesson_progress_service.py
+========================================
+
+from datetime import datetime
+from sqlalchemy.orm import Session
+from app.models.lesson import Lesson
+from app.models.user import User
+from app.models.lesson_progress import LessonProgress
+
+
+def find_by_user_and_lesson(db: Session, user: User, lesson: Lesson) -> LessonProgress | None:
+    return db.query(LessonProgress).filter_by(user_id=user.id, lesson_id=lesson.id).first()
+
+
+def save_lesson_progress(db: Session, lesson_progress: LessonProgress):
+    db.add(lesson_progress)
+    db.commit()
+    db.refresh(lesson_progress)
+    return lesson_progress
+
+
+def start_or_update_lesson_progress(db: Session, user: User, lesson: Lesson) -> LessonProgress:
+    progress = find_by_user_and_lesson(db, user, lesson)
+    if not progress:
+        progress = LessonProgress(user=user, lesson=lesson)
+        db.add(progress)
+        db.commit()
+        db.refresh(progress)
+    return progress
+
+
+def has_completed_lesson(db: Session, user: User, lesson: Lesson) -> bool:
+    progress = find_by_user_and_lesson(db, user, lesson)
+    return progress.is_completed if progress else False
+
+
+def mark_completed(db: Session, user: User, lesson: Lesson):
+    if not user or not lesson:
+        return False
+        
+    progress = db.query(LessonProgress).filter(
+        LessonProgress.user_id == user.id,
+        LessonProgress.lesson_id == lesson.id
+    ).first()
+    
+    if not progress:
+        progress = LessonProgress(
+            user_id=user.id,
+            lesson_id=lesson.id,
+            is_completed=True
+        )
+        db.add(progress)
+    else:
+        progress.is_completed = True
+    
+    db.commit()
+    return True
+
+========================================
+Файл: C:\Бэк_купсач\course_v1\app\services\lesson_service.py
+========================================
+
+import logging
+from sqlalchemy.orm import Session
+from app.models.lesson import Lesson
+from app.models.course import Course
+from app.models.block import Block, BlockType
+from app.services.block_service import delete_blocks_by_lesson, save_all_blocks
+from typing import List
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# Создаем обработчик для вывода в консоль
+handler = logging.StreamHandler()
+handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+logger.addHandler(handler)
+
+def find_by_id(db: Session, lesson_id: int) -> Lesson:
+    lesson = db.query(Lesson).filter_by(id=lesson_id).first()
+    if not lesson:
+        raise RuntimeError("Lesson not found")
+    return lesson
+
+
+def find_lessons_by_course(db: Session, course_id: int) -> List[Lesson]:
+    return db.query(Lesson).filter_by(course_id=course_id).all()
+
+
+# В services/lesson_service.py
+def save_lesson(db: Session, lesson_data: dict, lesson_id: int = None):
+    """Создать или обновить урок"""
+    try:
+        if lesson_id:
+            # Логика обновления существующего урока
+            lesson = db.query(Lesson).filter(Lesson.id == lesson_id).first()
+            if not lesson:
+                raise ValueError("Урок не найден")
+            
+            lesson.title = lesson_data["title"]
+            
+            # Удаляем старые блоки
+            db.query(Block).filter(Block.lesson_id == lesson_id).delete()
+        else:
+            # Логика создания нового урока
+            lesson = Lesson(
+                title=lesson_data["title"],
+                course_id=lesson_data["course_id"]
+            )
+            db.add(lesson)
+            db.commit()  # Сначала сохраняем урок, чтобы получить ID
+            db.refresh(lesson)  # Обновляем объект, чтобы получить ID
+        
+        # Добавляем блоки
+        blocks = []
+        for block_data in lesson_data.get("blocks", []):
+            block = Block(
+                title=block_data["title"],
+                type=block_data["type"],
+                content=block_data["content"],
+                lesson_id=lesson.id
+            )
+            blocks.append(block)
+        
+        db.bulk_save_objects(blocks)  # Эффективное сохранение всех блоков
+        db.commit()
+        
+        return lesson
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error saving lesson: {str(e)}", exc_info=True)
+        raise
+
+
+def delete_lesson_by_id(db: Session, lesson_id: int):
+    lesson = find_by_id(db, lesson_id)
+    db.delete(lesson)
+    db.commit()
+
+
+def update_blocks(db: Session, lesson: Lesson, block_title: List[str], block_type: List[str], block_content: List[str]):
+    blocks = []
+    for i in range(len(block_title)):
+        block = Block(
+            title=block_title[i],
+            type=BlockType(block_type[i]),
+            content=block_content[i],
+            lesson_id=lesson.id
+        )
+        blocks.append(block)
+    delete_blocks_by_lesson(db, lesson.id)
+    save_all_blocks(db, blocks)
+
+
+def save(db: Session, lesson: Lesson) -> Lesson:
+    db.add(lesson)
+    db.commit()
+    db.refresh(lesson)
+    return lesson
+
+
+========================================
+Файл: C:\Бэк_купсач\course_v1\app\services\user_service.py
+========================================
+
+from sqlalchemy.orm import Session
+from datetime import datetime
+from typing import Optional, List
+from app.models.user import User, RoleEnum
+from app.schemas.user import UserCreate
+from app.auth.auth_handler import hash_password
+from sqlalchemy.exc import NoResultFound
+
+# ✅ Найти пользователя по email
+def get_user_by_email(db: Session, email: str) -> Optional[User]:
+    return db.query(User).filter(User.email == email).first()
+
+# ✅ Добавить нового пользователя
+def create_user(db: Session, user_data: UserCreate):
+    existing_user = get_user_by_email(db, user_data.email)
+    if existing_user:
+        return  # Пользователь уже существует
+
+    new_user = User(
+        name=user_data.name,
+        surname=user_data.surname,
+        email=user_data.email,
+        phone=user_data.phone,
+        role=user_data.role or RoleEnum.Student,
+        created_at=datetime.utcnow(),
+        password=hash_password(user_data.password)
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return new_user
+
+# ✅ Обновить существующего пользователя
+def save_user(db: Session, user_id: int, updated_data: UserCreate):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise ValueError("Пользователь не найден")
+
+    user.name = updated_data.name
+    user.surname = updated_data.surname
+    user.email = updated_data.email
+    user.phone = updated_data.phone
+    user.role = updated_data.role
+    db.commit()
+    db.refresh(user)
+    return user
+
+# ✅ Найти всех учителей
+def find_teachers(db: Session) -> List[User]:
+    return db.query(User).filter(User.role == RoleEnum.TEACHER).all()
+
+# ✅ Найти всех пользователей
+def find_all_users(db: Session) -> List[User]:
+    return db.query(User).all()
+
+# ✅ Найти пользователя по ID
+def find_user_by_id(db: Session, user_id: int) -> Optional[User]:
+    return db.query(User).filter(User.id == user_id).first()
+
+# ✅ Изменить пароль пользователя
+def change_password(db: Session, user_id: int, new_password: str):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise ValueError("Пользователь не найден")
+
+    user.password = hash_password(new_password)
+    db.commit()
+    db.refresh(user)
+    return user
+
+# ✅ Найти пользователя по имени (email)
+def find_by_name(db: Session, email: str) -> User:
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise ValueError("Пользователь не найден")
+    return user
+
+# ✅ Удалить пользователя
+def delete_user(db: Session, user_id: int):
+    user = find_user_by_id(db, user_id)
+    if not user:
+        raise ValueError("User not found")
+
+    # Если преподаватель — убрать из курсов
+    if user.role == RoleEnum.TEACHER:
+        from models.course import Course
+        db.query(Course).filter(Course.instructor_id == user.id).update({"instructor_id": None})
+
+    db.delete(user)
+    db.commit()
