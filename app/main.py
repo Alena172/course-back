@@ -24,7 +24,7 @@ templates = Jinja2Templates(directory="templates")
 
 @app.get("/")
 async def root_redirect(request: Request, db: Lesson = Depends(get_db)):
-    user = await course_route.get_current_user(request)
+    user = await course_route.get_current_user(request, db)
     if not user:
         return RedirectResponse(url="/login")
     if user.role == RoleEnum.ADMIN:
