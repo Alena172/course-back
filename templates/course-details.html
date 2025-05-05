@@ -42,21 +42,43 @@
             <p><strong>Цена:</strong> <span>{{ course.price }}</span> руб.</p>
         </div>
 
-        <!-- Кнопка записи на курс -->
-        {% if not enrollment or enrollment.status != 'ACTIVE' %}
-        <form action="/enroll/{{ course.id }}" method="post" class="enroll-form">
-            <button type="submit" class="btn">
-                Записаться на курс
-            </button>
-        </form>
-        {% endif %}
-
-        <!-- Если пользователь уже записан на курс с активным статусом -->
-        {% if enrollment and enrollment.status == 'ACTIVE' %}
-        <span class="enrollment-status">
-            Вы уже записаны на этот курс.
-        </span>
-        {% endif %}
+<!-- Кнопка записи на курс и статус -->
+<div class="enrollment-section">
+    {% if not enrollment %}
+    <form action="/enroll/{{ course.id }}" method="post" class="enroll-form">
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-user-plus"></i> Записаться на курс
+        </button>
+    </form>
+    
+    {% elif enrollment.status == 'ACTIVE' %}
+    <div class="alert alert-success enrollment-status">
+        <i class="fas fa-check-circle"></i>
+        <span>Вы успешно записаны на этот курс</span>
+        <a href="/myaccount/courses/{{ course.id }}/lessons" class="btn btn-outline-success">
+            Перейти к обучению
+        </a>
+    </div>
+    
+    {% elif enrollment.status == 'COMPLETED' %}
+    <div class="alert alert-info enrollment-status">
+        <i class="fas fa-award"></i>
+        <span>Вы успешно завершили этот курс!</span>
+        <a href="/certificate/{{ course.id }}/{{ current_user.id }}" class="btn btn-outline-info">
+            Получить сертификат
+        </a>
+    </div>
+    
+    {% else %}
+    <div class="alert alert-secondary enrollment-status">
+        <i class="fas fa-info-circle"></i>
+        <span>Вы успешно записаны на этот курс</span>
+        <a href="/myaccount/courses/{{ course.id }}/lessons" class="btn btn-outline-success">
+            Перейти к обучению
+        </a>
+    </div>
+    {% endif %}
+</div>
     </div>
 </main>
 </body>

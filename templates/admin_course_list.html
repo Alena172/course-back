@@ -41,7 +41,7 @@
         {% endif %}
       </td>
       <td>{{ course.category if course.category else 'Не указана' }}</td>
-      <td>{{ course.status if course.status else 'Не указан' }}</td>
+      <td>{{ course.status.display_name if course.status else 'Не указан' }}</td>
       <td>
         <a href="/admin/course-form?id={{ course.id }}" class="btn btn-warning btn-sm">Редактировать</a>
         <form action="/admin/delete-course" method="post" class="d-inline-block">
