@@ -12,8 +12,11 @@ class JWTBearer(HTTPBearer):
         if credentials:
             try:
                 payload = decode_token(credentials.credentials)
-                return payload  # {'sub': user_id}
+                return payload
             except JWTError:
                 raise HTTPException(status_code=403, detail="Invalid token")
         else:
             raise HTTPException(status_code=403, detail="Authorization required")
+
+
+
