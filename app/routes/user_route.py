@@ -19,26 +19,6 @@ def get_registration_form(request: Request):
     return templates.TemplateResponse("form.html", {"request": request, "userReg": {}})
 
 
-# @router.post("/login")
-# def login(
-#     request: Request,
-#     response: RedirectResponse,
-#     email: str = Form(...),
-#     password: str = Form(...),
-#     db: Session = Depends(get_db),
-# ):
-#     user = user_service.get_user_by_email(db, email)
-#     if user and verify_password(password, user.password):
-#         response = RedirectResponse(url="/myaccount", status_code=HTTP_302_FOUND)
-#         # ВРЕМЕННО сохраняем email в сессии request.state
-#         request.session["user_email"] = email
-#         return response
-#     return templates.TemplateResponse("form.html", {
-#         "request": request,
-#         "error": "Неверный email или пароль"
-#     })
-
-
 @router.post("/reg")
 def register_user(
     request: Request,
@@ -92,13 +72,11 @@ def login(
     user = user_service.get_user_by_email(db, email)
     if user and verify_password(password, user.password):
         access_token = create_access_token({"sub": user.email}, user.role)
-        
-        # Определяем URL для перенаправления в зависимости от роли
         if user.role == RoleEnum.ADMIN:
             redirect_url = "/admin/dashboard"
         elif user.role == RoleEnum.TEACHER:
             redirect_url = "/teacher/courses"
-        else:  # STUDENT или другие роли
+        else:
             redirect_url = "/myaccount"
             
         response = RedirectResponse(url=redirect_url, status_code=HTTP_302_FOUND)
@@ -123,21 +101,21 @@ def show_my_account(
     db: Session = Depends(get_db),
     access_token: str = Cookie(default=None),
 ):
-    print("Access token:", access_token)  # Отладочная печать
+    print("Access token:", access_token)
     
     if not access_token:
         print("No token found")
         return RedirectResponse("/login", status_code=HTTP_302_FOUND)
 
     email = decode_token(access_token)
-    print("Decoded email:", email)  # Отладочная печать
+    print("Decoded email:", email)
     
     if not email:
         print("Invalid or expired token")
         return RedirectResponse("/login", status_code=HTTP_302_FOUND)
 
     user = user_service.get_user_by_email(db, email)
-    print(f"Retrieved user type: {type(user)}")  # Добавьте эту строку
+    print(f"Retrieved user type: {type(user)}")
     if not user:
         print("User not found")
         return RedirectResponse("/login", status_code=HTTP_302_FOUND)

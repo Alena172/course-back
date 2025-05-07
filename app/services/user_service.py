@@ -6,15 +6,13 @@ from app.schemas.user import UserCreate
 from app.auth.auth_handler import hash_password
 from sqlalchemy.exc import NoResultFound
 
-# ✅ Найти пользователя по email
 def get_user_by_email(db: Session, email: str) -> Optional[User]:
     return db.query(User).filter(User.email == email).first()
 
-# ✅ Добавить нового пользователя
 def create_user(db: Session, user_data: UserCreate):
     existing_user = get_user_by_email(db, user_data.email)
     if existing_user:
-        return  # Пользователь уже существует
+        return 
 
     new_user = User(
         name=user_data.name,
@@ -30,7 +28,6 @@ def create_user(db: Session, user_data: UserCreate):
     db.refresh(new_user)
     return new_user
 
-# ✅ Обновить существующего пользователя
 def save_user(db: Session, user_id: int, updated_data: UserCreate):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -45,19 +42,15 @@ def save_user(db: Session, user_id: int, updated_data: UserCreate):
     db.refresh(user)
     return user
 
-# ✅ Найти всех учителей
 def find_teachers(db: Session) -> List[User]:
     return db.query(User).filter(User.role == RoleEnum.TEACHER).all()
 
-# ✅ Найти всех пользователей
 def find_all_users(db: Session) -> List[User]:
     return db.query(User).all()
 
-# ✅ Найти пользователя по ID
 def find_user_by_id(db: Session, user_id: int) -> Optional[User]:
     return db.query(User).filter(User.id == user_id).first()
 
-# ✅ Изменить пароль пользователя
 def change_password(db: Session, user_id: int, new_password: str):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -68,20 +61,16 @@ def change_password(db: Session, user_id: int, new_password: str):
     db.refresh(user)
     return user
 
-# ✅ Найти пользователя по имени (email)
 def find_by_name(db: Session, email: str) -> User:
     user = db.query(User).filter(User.email == email).first()
     if not user:
         raise ValueError("Пользователь не найден")
     return user
 
-# ✅ Удалить пользователя
 def delete_user(db: Session, user_id: int):
     user = find_user_by_id(db, user_id)
     if not user:
         raise ValueError("User not found")
-
-    # Если преподаватель — убрать из курсов
     if user.role == RoleEnum.TEACHER:
         from models.course import Course
         db.query(Course).filter(Course.instructor_id == user.id).update({"instructor_id": None})
