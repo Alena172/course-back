@@ -42,37 +42,17 @@ async def enroll_in_course(course_id: int, request: Request, db: Session = Depen
     if not course:
         return RedirectResponse("/courses", status_code=404)
 
-    # Проверяем, не записан ли пользователь уже на курс
     existing_enrollment = enrollment_service.find_enrollment(db, user.id, course_id)
     if existing_enrollment:
-        # Пользователь уже записан - перенаправляем без создания новой записи
         return RedirectResponse("/myaccount", status_code=303)
-
-    # Если не записан - создаем новую запись
     enrollment_service.enroll_user_in_course(db, user.id, course_id)
 
     return RedirectResponse("/myaccount", status_code=303)
-
-
-# @router.get("/certificate/{course_id}/{user_id}")
-# def issue_certificate(course_id: int, user_id: int, db: Session = Depends(get_db)):
-#     user = user_service.find_user_by_id(db, user_id)
-#     course = course_service.find_course_by_id(db, course_id)
-
-#     cert = enrollment_service.find_enrollment(db, user, course)
-
-#     pdf_bytes = generate_certificate_pdf(course, user)
-#     return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf", headers={
-#         "Content-Disposition": "attachment; filename=certificate.pdf"
-#     })
-
 
 @router.get("/certificate/{course_id}/{user_id}")
 def issue_certificate(course_id: int, user_id: int, db: Session = Depends(get_db)):
     user = user_service.find_user_by_id(db, user_id)
     course = course_service.find_course_by_id(db, course_id)
-
-    # Передаем user.id и course.id вместо объектов
     enrollment = enrollment_service.find_enrollment(db, user.id, course.id)
 
     if not enrollment:

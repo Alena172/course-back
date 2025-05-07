@@ -30,6 +30,6 @@ def get_db():
 if __name__ == "__main__":
     try:
         with engine.connect() as conn:
-            print("✅ Подключение к PostgreSQL успешно установлено!")
+            print("Подключение к PostgreSQL успешно установлено")
     except Exception as e:
-        print(f"❌ Ошибка подключения к PostgreSQL: {e}")
+        print(f"Ошибка подключения к PostgreSQL: {e}")

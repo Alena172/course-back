@@ -10,7 +10,6 @@ from sqlalchemy.orm import joinedload
 logger = logging.getLogger("course_service")
 
 
-# ✅ Добавить курс
 def add_course(db: Session, course_data: CourseCreate):
     instructor = None
     if course_data.instructor_id:
@@ -36,13 +35,10 @@ def add_course(db: Session, course_data: CourseCreate):
     return new_course
 
 
-# ✅ Обновить курс
 def update_course(db: Session, course_id: int, updated_data: CourseCreate):
     course = db.query(Course).filter(Course.id == course_id).first()
     if not course:
         raise ValueError("Курс не найден")
-
-    # Обновляем основные поля
     course.title = updated_data.title
     course.description = updated_data.description
     course.price = updated_data.price
@@ -50,8 +46,6 @@ def update_course(db: Session, course_id: int, updated_data: CourseCreate):
     course.duration = updated_data.duration
     course.status = updated_data.status
     course.image = updated_data.image
-
-    # Обрабатываем преподавателя
     if updated_data.instructor_id:
         instructor = db.query(User).filter(
             User.id == updated_data.instructor_id,
@@ -66,50 +60,18 @@ def update_course(db: Session, course_id: int, updated_data: CourseCreate):
     db.commit()
     db.refresh(course)
     return course
-# def update_course(db: Session, course_id: int, updated_data: CourseCreate):
-#     course = db.query(Course).filter(Course.id == course_id).first()
-#     if not course:
-#         raise ValueError("Курс не найден")
-
-#     course.title = updated_data.title
-#     course.description = updated_data.description
-#     course.price = updated_data.price
-#     course.category = updated_data.category
-#     course.duration = updated_data.duration
-#     course.status = updated_data.status
-#     course.image = updated_data.image
-
-#     if updated_data.instructor_id:
-#         instructor = db.query(User).filter(User.id == updated_data.instructor_id).first()
-#         if not instructor:
-#             raise ValueError("Преподаватель не найден")
-#         if instructor.role != RoleEnum.TEACHER:
-#             raise ValueError("Пользователь не является преподавателем")
-#         course.instructor = instructor
-#     else:
-#         course.instructor = None
-
-#     db.commit()
-#     db.refresh(course)
-#     return course
 
 
-# ✅ Проверить, существует ли курс
 def course_exists(db: Session, course_id: int) -> bool:
     exists = db.query(Course).filter(Course.id == course_id).first() is not None
     logger.info(f"Проверка существования курса с ID: {course_id}: {exists}")
     return exists
 
 
-# ✅ Получить все курсы
 def get_all_courses(db: Session) -> List[Course]:
     courses = db.query(Course).all()
-    
-    # Получаем всех преподавателей одним запросом
     instructor_ids = {c.instructor_id for c in courses if c.instructor_id}
     instructors = {i.id: i for i in db.query(User).filter(User.id.in_(instructor_ids)).all()} if instructor_ids else {}
-    
-    # Добавляем преподавателя к каждому курсу
     for course in courses:
         if course.instructor_id:
             course.instructor = instructors.get(course.instructor_id)
@@ -119,7 +81,6 @@ def get_all_courses(db: Session) -> List[Course]:
     return courses
 
 
-# ✅ Найти курс по ID
 def find_course_by_id(db: Session, course_id: int) -> Course:
     course = db.query(Course).filter(Course.id == course_id).first()
     if not course:
@@ -127,7 +88,6 @@ def find_course_by_id(db: Session, course_id: int) -> Course:
     return course
 
 
-# ✅ Удалить курс
 def delete_course(db: Session, course_id: int):
     course = db.query(Course).filter(Course.id == course_id).first()
     if not course:
@@ -136,11 +96,9 @@ def delete_course(db: Session, course_id: int):
     db.commit()
 
 
-# ✅ Найти всех преподавателей
 def find_teachers(db: Session) -> List[User]:
     return db.query(User).filter(User.role == RoleEnum.TEACHER).all()
 
 
-# ✅ Курсы конкретного преподавателя
 def find_by_instructor(db: Session, instructor_id: int) -> List[Course]:
     return db.query(Course).filter(Course.instructor_id == instructor_id).all()

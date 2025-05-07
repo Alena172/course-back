@@ -9,8 +9,6 @@ from typing import List
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-# Создаем обработчик для вывода в консоль
 handler = logging.StreamHandler()
 handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
 logger.addHandler(handler)
@@ -26,31 +24,23 @@ def find_lessons_by_course(db: Session, course_id: int) -> List[Lesson]:
     return db.query(Lesson).filter_by(course_id=course_id).all()
 
 
-# В services/lesson_service.py
 def save_lesson(db: Session, lesson_data: dict, lesson_id: int = None):
     """Создать или обновить урок"""
     try:
         if lesson_id:
-            # Логика обновления существующего урока
             lesson = db.query(Lesson).filter(Lesson.id == lesson_id).first()
             if not lesson:
                 raise ValueError("Урок не найден")
-            
             lesson.title = lesson_data["title"]
-            
-            # Удаляем старые блоки
             db.query(Block).filter(Block.lesson_id == lesson_id).delete()
         else:
-            # Логика создания нового урока
             lesson = Lesson(
                 title=lesson_data["title"],
                 course_id=lesson_data["course_id"]
             )
             db.add(lesson)
-            db.commit()  # Сначала сохраняем урок, чтобы получить ID
-            db.refresh(lesson)  # Обновляем объект, чтобы получить ID
-        
-        # Добавляем блоки
+            db.commit()
+            db.refresh(lesson)
         blocks = []
         for block_data in lesson_data.get("blocks", []):
             block = Block(
@@ -60,12 +50,9 @@ def save_lesson(db: Session, lesson_data: dict, lesson_id: int = None):
                 lesson_id=lesson.id
             )
             blocks.append(block)
-        
-        db.bulk_save_objects(blocks)  # Эффективное сохранение всех блоков
+        db.bulk_save_objects(blocks)
         db.commit()
-        
         return lesson
-        
     except Exception as e:
         db.rollback()
         logger.error(f"Error saving lesson: {str(e)}", exc_info=True)
