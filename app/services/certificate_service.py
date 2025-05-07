@@ -14,7 +14,8 @@ from reportlab.pdfbase.ttfonts import TTFont
 def generate_certificate_pdf(course, user):
     
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    fonts_dir = os.path.join(r"C:\Бэк_купсач\course_v1\static\fonts")
+    fonts_dir = os.path.join(base_dir, "..", "..", "static", "fonts")
+    fonts_dir = os.path.abspath(fonts_dir)
     pdfmetrics.registerFont(TTFont('DejaVuSans', os.path.join(fonts_dir, 'DejaVuSans.ttf')))
     pdfmetrics.registerFont(TTFont('DejaVuSans-Bold', os.path.join(fonts_dir, 'DejaVuSans-Bold.ttf')))
     
