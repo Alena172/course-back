@@ -73,7 +73,7 @@ async def show_user_form(
 async def process_user_form(
     request: Request,
     db: Session = Depends(get_db),
-    id: str = Form(None),  # Change to str first
+    id: str = Form(None),
     name: str = Form(...),
     surname: str = Form(...),
     email: str = Form(...),
@@ -82,7 +82,6 @@ async def process_user_form(
     role: str = Form(...)
 ):
     try:
-        # Convert id to int if it exists and is not empty
         user_id = int(id) if id and id.strip() else None
         
         user_data = UserCreate(
@@ -105,14 +104,12 @@ async def process_user_form(
         print(f"Error in process_user_form: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-# ✅ Список пользователей
 @router.get("/admin/users", response_class=HTMLResponse)
 async def list_users(
     request: Request,
     db: Session = Depends(get_db)
 ):
     try:
-        # Проверка прав администратора
         user = await get_current_user(request, db)
         if not user or user.role != RoleEnum.ADMIN:
             return RedirectResponse("/login", status_code=302)
@@ -141,14 +138,12 @@ async def delete_user_form(
         print(f"Error deleting user: {str(e)}")
         raise HTTPException(status_code=500, detail="Error deleting user")
 
-# ✅ Список курсов
 @router.get("/admin/courses-admin", response_class=HTMLResponse)
 async def list_courses_admin(
     request: Request,
     db: Session = Depends(get_db)
 ):
     try:
-        # Проверка прав администратора
         user = await get_current_user(request, db)
         if not user or user.role != RoleEnum.ADMIN:
             return RedirectResponse("/login", status_code=302)
@@ -177,8 +172,8 @@ async def delete_course_form(
         print(f"Error deleting course: {str(e)}")
         raise HTTPException(status_code=500, detail="Error deleting course")
 
-# ✅ Форма добавления/редактирования курса
-@router.get("/admin/course-form", response_class=HTMLResponse)  # Исправленный путь
+
+@router.get("/admin/course-form", response_class=HTMLResponse)  
 async def show_course_form(
     request: Request,
     id: Optional[int] = None,
@@ -192,7 +187,7 @@ async def show_course_form(
         )
         instructors = find_teachers(db)
         return templates.TemplateResponse(
-            "admin_course_form.html",  # Убедитесь, что шаблон имеет это имя
+            "admin_course_form.html",
             {"request": request, "course": course, "instructors": instructors}
         )
     except HTTPException:
@@ -201,47 +196,6 @@ async def show_course_form(
         logger.error(f"Error in show_course_form: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500)
 
-# @router.post("/admin/save-course", response_class=HTMLResponse)  # Измененный путь для единообразия
-# async def save_course_form(
-#     request: Request,
-#     db: Session = Depends(get_db),
-#     id: str = Form(None),
-#     title: str = Form(...),
-#     description: str = Form(""),
-#     duration: int = Form(...),
-#     price: float = Form(...),
-#     category: str = Form(...),
-#     status: str = Form(...),
-#     image: str = Form(""),
-#     instructor_id: Optional[int] = Form(None),
-# ):
-#     try:
-#         await verify_admin_access(request, db)
-        
-#         course_data = CourseCreate(
-#             title=title,
-#             description=description,
-#             duration=duration,
-#             price=price,
-#             category=category,
-#             status=status,
-#             image=image,
-#             instructor_id=instructor_id
-#         )
-
-#         if id and course_exists(db, id):
-#             logger.info(f"Обновление курса с ID: {id}")
-#             update_course(db, id, course_data)
-#         else:
-#             logger.info(f"Создание нового курса: {title}")
-#             add_course(db, course_data)
-
-#         return RedirectResponse("/admin/courses-admin", status_code=303)
-#     except HTTPException:
-#         return RedirectResponse("/login", status_code=302)
-#     except Exception as e:
-#         logger.error(f"Error in save_course_form: {str(e)}", exc_info=True)
-#         raise HTTPException(status_code=500)
 
 @router.post("/admin/save-course", response_class=HTMLResponse)
 async def save_course_form(
@@ -259,11 +213,7 @@ async def save_course_form(
 ):
     try:
         await verify_admin_access(request, db)
-        
-        # Преобразуем id в int, если он есть
         course_id = int(id) if id and id.strip() else None
-        
-        # Проверяем преподавателя, если он указан
         instructor = None
         if instructor_id:
             instructor = db.query(User).get(instructor_id)

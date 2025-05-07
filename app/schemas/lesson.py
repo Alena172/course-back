@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import List, Optional
-from app.schemas.block import BlockRead  # импортируем BlockRead из block.py
+from app.schemas.block import BlockRead
 
 class LessonBase(BaseModel):
     title: str

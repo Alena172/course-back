@@ -23,17 +23,13 @@ def complete_lesson(
     db: Session = Depends(get_db),
     payload: dict = Depends(JWTBearer())
 ):
-    # 🔍 Проверка, что пользователь — сам себя
     if payload["sub"] != user_id:
         raise HTTPException(status_code=403, detail="You can only mark your own progress")
-
-    # 🔍 Проверка, что урок существует
     from services.lesson_service import get_lesson_by_id
     lesson = get_lesson_by_id(db, lesson_id)
     if not lesson:
         raise HTTPException(status_code=404, detail="Lesson not found")
 
-    # 🔍 Проверка, что студент записан на этот курс
     from services.enrollment_service import get_enrollments_by_user
     user_enrollments = get_enrollments_by_user(db, user_id)
     course_ids = [e.course_id for e in user_enrollments]
@@ -41,11 +37,9 @@ def complete_lesson(
     if lesson.course_id not in course_ids:
         raise HTTPException(status_code=403, detail="You are not enrolled in this course")
 
-    # ✅ Отмечаем урок завершённым
     from services.lesson_progress_service import mark_lesson_completed
     progress = mark_lesson_completed(db, user_id, lesson_id)
 
-    # 🔁 Проверка — все ли уроки завершены?
     from services.lesson_service import get_lessons_by_course
     lessons = get_lessons_by_course(db, lesson.course_id)
     lesson_ids = {l.id for l in lessons}
@@ -56,7 +50,6 @@ def complete_lesson(
     }
 
     if lesson_ids == completed:
-        # 🎉 Выдать сертификат
         from services.certificate_service import create_certificate
         from schemas.certificate import CertificateCreate
         create_certificate(db, CertificateCreate(user_id=user_id, course_id=lesson.course_id))
