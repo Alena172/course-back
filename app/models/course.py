@@ -21,13 +21,13 @@ class Course(Base):
     __tablename__ = "course"
 
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, nullable=False)
+    category = Column(String, nullable=False)
     description = Column(Text)
-    instructor_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     duration = Column(Integer)
     price = Column(Numeric)
-    category = Column(String, nullable=False)
     status = Column(Enum(StatusEnum), nullable=False)
+    title = Column(String, nullable=False)
+    instructor_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     image = Column(String)
 
     @property

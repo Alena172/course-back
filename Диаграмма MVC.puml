@@ -1,0 +1,159 @@
+'@startuml LMS_MVC_Diagram
+'
+'skinparam monochrome true
+'skinparam defaultFontName Arial
+'skinparam roundCorner 10
+'
+'left to right direction
+'
+'actor "Пользователь" as user
+'
+'rectangle "View (Представление)" as view {
+'  component "HTML Templates\n(Jinja2)" as templates
+'  component "API Endpoints" as api
+'}
+'
+'rectangle "Controller\n(Маршрутизаторы)" as controller {
+'  component "user_route.py" as user_route
+'  component "course_route.py" as course_route
+'  component "lesson_route.py" as lesson_route
+'  component "admin_route.py" as admin_route
+'  component "enrollment_route.py" as enrollment_route
+'  component "certificate_route.py" as certificate_route
+'}
+'
+'rectangle "Service Layer" as service {
+'  component "user_service.py" as user_service
+'  component "course_service.py" as course_service
+'  component "lesson_service.py" as lesson_service
+'  component "certificate_service.py" as certificate_service
+'  component "enrollment_service.py" as enrollment_service
+'}
+'
+'rectangle "Model (ORM)" as model {
+'  component "User" as user_model
+'  component "Course" as course_model
+'  component "Lesson" as lesson_model
+'  component "Enrollment" as enrollment_model
+'  component "Certificate" as certificate_model
+'}
+'
+'database "PostgreSQL" as db
+'
+'' Connections
+'user --> view : HTTP запросы
+'view --> controller : Маршрутизация
+'controller --> service : Вызов сервисов
+'service --> model : Работа с данными
+'model --> db : SQL запросы
+'
+'' Detailed connections within controller
+'user_route --> user_service
+'course_route --> course_service
+'lesson_route --> lesson_service
+'admin_route --> user_service
+'admin_route --> course_service
+'enrollment_route --> enrollment_service
+'certificate_route --> certificate_service
+'
+'' Service to model connections
+'user_service --> user_model
+'course_service --> course_model
+'lesson_service --> lesson_model
+'certificate_service --> certificate_model
+'enrollment_service --> enrollment_model
+'
+'' Auth components
+'component "auth_bearer.py" as auth_bearer
+'component "auth_handler.py" as auth_handler
+'component "role_checker.py" as role_checker
+'
+'controller --> auth_bearer : JWT проверка
+'auth_bearer --> auth_handler : Декодирование токена
+'controller --> role_checker : Проверка ролей
+'
+'' Additional notes
+'note top of db
+'  Хранит все данные системы:
+'  - Пользователи
+'  - Курсы
+'  - Уроки
+'  - Прогресс
+'  - Сертификаты
+'end note
+'
+'note right of view
+'  Представление включает:
+'  - HTML шаблоны
+'  - JSON API
+'  - PDF сертификаты
+'end note
+'
+'@enduml
+
+
+@startuml LMS_MVC_Diagram
+
+skinparam monochrome true
+skinparam defaultFontName Arial
+skinparam roundCorner 10
+
+left to right direction
+
+actor "Пользователь" as user
+
+rectangle "View (Представление)" as view {
+  component "HTML Templates\n(Jinja2)" as templates
+}
+
+rectangle "Controller\n(Маршрутизаторы)" as controller {
+  component "user_route.py" as user_route
+  component "course_route.py" as course_route
+  component "lesson_route.py" as lesson_route
+  component "admin_route.py" as admin_route
+  component "enrollment_route.py" as enrollment_route
+  component "certificate_route.py" as certificate_route
+}
+
+rectangle "Service Layer" as service {
+  component "user_service.py" as user_service
+  component "course_service.py" as course_service
+  component "lesson_service.py" as lesson_service
+  component "certificate_service.py" as certificate_service
+  component "enrollment_service.py" as enrollment_service
+}
+
+rectangle "Model (ORM)" as model {
+  component "User" as user_model
+  component "Course" as course_model
+  component "Lesson" as lesson_model
+  component "Enrollment" as enrollment_model
+  component "Certificate" as certificate_model
+}
+
+database "PostgreSQL" as db
+
+' Connections between blocks only
+user --> view : HTTP запросы
+view --> controller : Маршрутизация
+controller --> service : Вызов сервисов
+service --> model : Работа с данными
+model --> db : SQL запросы
+
+' Auth components
+component "auth_bearer.py" as auth_bearer
+component "auth_handler.py" as auth_handler
+component "role_checker.py" as role_checker
+
+controller --> auth_bearer : JWT проверка
+auth_bearer --> auth_handler : Декодирование токена
+controller --> role_checker : Проверка ролей
+
+note right of view
+  Представление включает:
+  - HTML шаблоны
+  - JSON API
+  - PDF сертификаты
+end note
+
+@enduml

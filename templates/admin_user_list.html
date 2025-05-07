@@ -31,7 +31,7 @@
     <tr>
       <td>{{ user.name }} {{ user.surname }}</td>
       <td>{{ user.email }}</td>
-      <td>{{ user.role }}</td>
+      <td>{{ user.role.display_name }}</td>
       <td>
         <a href="/admin/create-or-edit-user?id={{ user.id }}" class="btn btn-warning">Редактировать</a>
         <form action="/admin/delete-user" method="post" class="d-inline-block">

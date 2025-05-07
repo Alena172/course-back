@@ -12,15 +12,13 @@ engine = create_engine(
     max_overflow=20,
     pool_timeout=30,
     pool_recycle=3600,
-    echo=True  # Для отладки SQL-запросов
+    echo=True
 )
-
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
 
-# Зависимость для получения сессии базы данных
 def get_db():
     db = SessionLocal()
     try:
