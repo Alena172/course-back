@@ -18,21 +18,18 @@ logger = logging.getLogger("admin")
 
 
 async def verify_admin_access(request: Request, db: Session):
-    """Вспомогательная функция для проверки прав администратора"""
     user = await get_current_user(request, db)
     if not user or user.role != RoleEnum.ADMIN:
         raise HTTPException(status_code=403, detail="Доступ запрещен")
     return user
 
 
-# ✅ Панель администратора
 @router.get("/admin/dashboard", response_class=HTMLResponse)
 async def admin_dashboard(
     request: Request,
     db: Session = Depends(get_db)
 ):
     try:
-        # Проверка аутентификации и прав доступа
         user = await get_current_user(request, db)
         if not user or user.role != RoleEnum.ADMIN:
             return RedirectResponse("/login", status_code=302)
@@ -46,7 +43,6 @@ async def admin_dashboard(
         logger.error(f"Error in admin_dashboard: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-# ✅ Форма добавления/редактирования пользователя
 @router.get("/admin/create-or-edit-user", response_class=HTMLResponse)
 async def show_user_form(
     request: Request,
@@ -54,12 +50,10 @@ async def show_user_form(
     db: Session = Depends(get_db)
 ):
     try:
-        # Проверка прав администратора
         current_user = await get_current_user(request, db)
         if not current_user or current_user.role != RoleEnum.ADMIN:
             return RedirectResponse("/login", status_code=302)
         
-        # Получаем пользователя или создаем пустой объект
         user = find_user_by_id(db, id) if id else UserCreate(
             name="", surname="", email="", phone="", password="", role="STUDENT"
         )

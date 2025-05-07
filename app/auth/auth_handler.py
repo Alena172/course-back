@@ -3,7 +3,7 @@ from jose import jwt
 from passlib.context import CryptContext
 import bcrypt
 
-SECRET_KEY = "secret_string"  # Замени на что-то сложное
+SECRET_KEY = "secret_string"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
@@ -28,29 +28,14 @@ def create_access_token(data: dict, role: str, expires_delta: timedelta = None):
 
 def decode_token(token: str):
     try:
-        # Удаляем 'Bearer ' если есть
         if token.startswith("Bearer "):
             token = token[7:]
             
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        return payload.get("sub")  # Возвращаем email
+        return payload.get("sub")
     except jwt.ExpiredSignatureError:
         print("Token expired")
         return None
     except jwt.JWTError:
         print("Invalid token")
         return None
-
-
-
-
-# def decode_token(token: str):
-#     return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-
-
-# def decode_access_token(token: str):
-#     try:
-#         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-#         return payload.get("sub")
-#     except JWTError:
-#         return None

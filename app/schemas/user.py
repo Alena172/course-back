@@ -26,7 +26,8 @@ class UserCreate(BaseModel):
     email: str
     phone: str
     password: str
-    role: RoleEnum = RoleEnum.STUDENT  # Устанавливаем значение по умолчанию # Делаем поле необязательным со значением по умолчанию
+    role: RoleEnum = RoleEnum.STUDENT
+    
 class UserRead(UserBase):
     id: int
 

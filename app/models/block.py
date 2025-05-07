@@ -12,9 +12,8 @@ class Block(Base):
     __tablename__ = 'blocks'
 
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String)
     content = Column(String)
     type = Column(Enum(BlockType))
-
     lesson_id = Column(Integer, ForeignKey("lessons.id"))
+    title = Column(String)
     lesson = relationship("Lesson", back_populates="blocks")

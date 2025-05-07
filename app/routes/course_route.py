@@ -26,14 +26,12 @@ logger.addHandler(handler)
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
-# 🔐 Получение текущего пользователя по JWT токену
 async def get_current_user(request: Request, db: Session):
     access_token = request.cookies.get("access_token")
     if not access_token:
         return None
     
     try:
-        # Декодируем токен и получаем email
         email = decode_token(access_token)
         if not email:
             return None
@@ -45,7 +43,6 @@ async def get_current_user(request: Request, db: Session):
 
 def get_active_courses(db: Session) -> List[Course]:
     try:
-        # Получаем только курсы со статусом ACTIVE
         active_courses = db.query(Course).filter(
             Course.status == "ACTIVE"
         ).all()
@@ -53,9 +50,8 @@ def get_active_courses(db: Session) -> List[Course]:
         return active_courses
         
     except Exception as e:
-        # Логируем ошибку, если что-то пошло не так
         print(f"Error fetching active courses: {str(e)}")
-        raise  # Можно заменить на возврат пустого списка [] в продакшене
+        raise
 
 
 async def verify_student_access(request: Request, db: Session) -> User:
