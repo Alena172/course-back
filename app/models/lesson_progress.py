@@ -8,7 +8,7 @@ class LessonProgress(Base):
     id = Column(Integer, primary_key=True, index=True)
     lesson_id = Column(Integer, ForeignKey("lessons.id"))
     user_id = Column(Integer, ForeignKey("users.id"))
-    completed = Column(Boolean, default=False)
+    is_completed = Column(Boolean, default=False)
 
     user = relationship("User", back_populates="progress")
     lesson = relationship("Lesson", back_populates="progress")
