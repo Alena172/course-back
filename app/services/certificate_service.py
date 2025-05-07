@@ -86,7 +86,35 @@ def generate_certificate_pdf(course, user):
     p.drawCentredString(width/2, height-290, "успешно завершил(а) курс обучения")
     p.setFont('DejaVuSans-Bold', 20)
     p.setFillColorRGB(0.8, 0.2, 0.2)  # Красный
-    p.drawCentredString(width/2, height-320, f"«{course.title}»")
+
+    # Максимальная ширина строки (с запасом от краёв)
+    max_width = width - 200  
+    words = course.title.split()
+    lines = []
+    current_line = ""
+
+    for word in words:
+        test_line = f"{current_line} {word}".strip()
+        if p.stringWidth(test_line, 'DejaVuSans-Bold', 20) <= max_width:
+            current_line = test_line
+        else:
+            lines.append(current_line)
+            current_line = word
+    if current_line:
+        lines.append(current_line)
+
+    # Рисуем строки с интервалом
+    y = height - 320
+    line_spacing = 24
+    y = height - 320
+    line_spacing = 24
+    for i, line in enumerate(lines):
+        if i == 0:
+            line = f"«{line}"  # Кавычка только в начале первой строки
+        if i == len(lines) - 1:
+            line = f"{line}»"  # Кавычка только в конце последней строки
+        p.drawCentredString(width / 2, y, line)
+        y -= line_spacing
 
     # Детали курса
     p.setFillColorRGB(0.3, 0.3, 0.3)
